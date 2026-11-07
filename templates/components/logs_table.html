@@ -20,7 +20,7 @@
                         {% if active_logs %}
                             {% for log in active_logs %}
                             <tr class="{% if log.log_status|lower == 'overdue' %}table-danger{% endif %}">
-                                <td class="ps-4 font-mono text-dark">#{{ "%04d"|format(log.id|int) if log.id is numeric else log.id }}</td>
+                                <td class="ps-4 font-mono text-dark">#{{ "%04d"|format(log.id|int) if log.id is number else log.id }}</td>
                                 <td>
                                     <div class="fw-bold">{{ log.officer_name if log.officer_name else 'ID Ref #' ~ log.officer_id }}</div>
                                     <div class="text-muted font-mono">{{ log.officer_force_number if log.officer_force_number else 'ID: ' ~ log.officer_id }}</div>

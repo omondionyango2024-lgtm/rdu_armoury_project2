@@ -1,0 +1,14 @@
+# IDE settings
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local environments
+venv/
+.venv/
+.env
+
+# Database connection profiles
+*.db
