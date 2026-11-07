@@ -1,0 +1,51 @@
+<!-- checkout_form.html - Data Acquisition Entry Fields Module Component -->
+<div class="col-lg-4">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-dark text-white py-3">
+            <i class="fa-solid fa-file-signature text-warning me-2"></i>Authorize Tactical Checkout
+        </div>
+        <div class="card-body p-4 bg-white">
+            <form action="/process_checkout" method="POST" autocomplete="off">
+                <div class="mb-3">
+                    <label class="form-label font-mono text-secondary small">Officer Service ID Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-id-card text-muted"></i></span>
+                        <label>
+                            <input type="text" name="officer_service_number" class="form-control" placeholder="e.g. RDU-APS-101" required>
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label font-mono text-secondary small">Weapon Physical Serial Stamp</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-barcode text-muted"></i></span>
+                        <label>
+                            <input type="text" name="weapon_serial" class="form-control" placeholder="e.g. FN-SCAR-88392" required>
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label font-mono text-secondary small">Tactical Operation Assignment</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-map-location-dot text-muted"></i></span>
+                        <label>
+                            <input type="text" name="operation" class="form-control" placeholder="e.g. Mandera Border Operation" required>
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label font-mono text-secondary small">Expected Operational Return Date</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-calendar-days text-muted"></i></span>
+                        <label>
+                            <input type="date" name="expected_return" class="form-control" required>
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 fw-bold py-2.5 shadow-sm">
+                    <i class="fa-solid fa-lock-open me-2"></i> Commit Checkout Transaction
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

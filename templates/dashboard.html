@@ -1,0 +1,60 @@
+<!-- dashboard.html - Main Operations Dashboard Control Panel -->
+{% extends 'base.html' %}
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card metric-card shadow-sm h-100 bg-white" style="border-left-color: var(--emerald);">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted text-uppercase small fw-bold mb-1">Available Weapons</h6>
+                    <h2 class="fw-bold text-dark m-0">{{ available }} <span class="fs-6 fw-normal text-muted">Rifles</span></h2>
+                    <small class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Ready for mobilization</small>
+                </div>
+                <div class="text-success"><i class="fa-solid fa-gun fa-2x"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card shadow-sm h-100 bg-white" style="border-left-color: #3498db;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted text-uppercase small fw-bold mb-1">Active Deployments</h6>
+                    <h2 class="fw-bold text-dark m-0">{{ deployed }} <span class="fs-6 fw-normal text-muted">Units</span></h2>
+                    <small class="text-primary"><i class="fa-solid fa-satellite-dish me-1"></i>Operational footprint</small>
+                </div>
+                <div class="text-primary"><i class="fa-solid fa-person-military-rifle fa-2x"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card shadow-sm h-100 bg-white" style="border-left-color: var(--crimson);">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted text-uppercase small fw-bold mb-1">Overdue Returns</h6>
+                    <h2 class="fw-bold text-dark m-0">1 <span class="fs-6 fw-normal text-muted">Flagged</span></h2>
+                    <small class="text-danger fw-bold"><i class="fa-solid fa-circle-exclamation me-1"></i>Window breach</small>
+                </div>
+                <div class="text-danger"><i class="fa-solid fa-triangle-exclamation fa-2x"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card shadow-sm h-100 bg-white" style="border-left-color: #f1c40f;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted text-uppercase small fw-bold mb-1">Low Ammunition</h6>
+                    <h2 class="fw-bold text-dark m-0">1 <span class="fs-6 fw-normal text-muted">Batch</span></h2>
+                    <small class="text-danger font-mono"><i class="fa-solid fa-box-open me-1"></i>9mm alert margin</small>
+                </div>
+                <div class="text-warning"><i class="fa-solid fa-boxes-stacked fa-2x"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Load separate subcomponents for form logic entries and table visualization layout records -->
+    {% include 'components/checkout_form.html' %}
+    {% include 'components/logs_table.html' %}
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+<!-- logs_table.html - Real-Time Audit Ledger Stream Records Component -->
+<div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white py-3">
+            <i class="fa-solid fa-list-check text-success me-2"></i>Active Field Deployment Ledger Logs
+        </div>
+        <div class="card-body p-0 bg-white">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light font-mono text-secondary small text-uppercase">
+                        <tr>
+                            <th class="ps-4 py-3">Log ID</th>
+                            <th>Officer Profile</th>
+                            <th>Weapon Allocation</th>
+                            <th>Operation Framework</th>
+                            <th class="pe-4">Deployment Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        {% if active_logs %}
+                            {% for log in active_logs %}
+                            <tr class="{% if log.log_status|lower == 'overdue' %}table-danger{% endif %}">
+                                <td class="ps-4 font-mono text-dark">#{{ "%04d"|format(log.id|int) if log.id is numeric else log.id }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ log.officer_name if log.officer_name else 'ID Ref #' ~ log.officer_id }}</div>
+                                    <div class="text-muted font-mono">{{ log.officer_force_number if log.officer_force_number else 'ID: ' ~ log.officer_id }}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ log.firearm_model if log.firearm_model else 'Asset ID: ' ~ log.firearm_id }}</div>
+                                    <div class="text-muted font-mono">{{ log.firearm_sn if log.firearm_sn else 'SN: Assigned' }}</div>
+                                </td>
+                                <td class="fw-semibold text-secondary">{{ log.purpose_operation }}</td>
+                                <td class="pe-4">
+                                    {% if log.log_status|lower == 'active' %}
+                                        <span class="badge bg-primary px-3 py-2"><i class="fa-solid fa-satellite-dish me-1"></i> In Field</span>
+                                    {% else %}
+                                        <span class="badge bg-danger px-3 py-2"><i class="fa-solid fa-triangle-exclamation me-1"></i> OVERDUE</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Local Mock Preview Data -->
+                            <tr>
+                                <td class="ps-4 font-mono text-dark">#0002</td>
+                                <td><div class="fw-bold">Cpl. David Kiprop</div><div class="text-muted font-mono">RDU-APS-101</div></td>
+                                <td><div class="fw-bold">FN SCAR-H</div><div class="text-muted font-mono">SN: FN-SCAR-88392</div></td>
+                                <td class="fw-semibold text-secondary">Border Security Operation Mandera</td>
+                                <td class="pe-4"><span class="badge bg-primary px-3 py-2"><i class="fa-solid fa-satellite-dish me-1"></i> In Field</span></td>
+                            </tr>
+                            <tr class="table-danger">
+                                <td class="ps-4 font-mono text-dark">#0003</td>
+                                <td><div class="fw-bold">PC. Evans Mwangi</div><div class="text-muted font-mono">RDU-APS-103</div></td>
+                                <td><div class="fw-bold">H&K G3A3</div><div class="text-muted font-mono">SN: G3-A3-99201</div></td>
+                                <td class="fw-semibold text-secondary">Rapid Response Buffer Zone</td>
+                                <td class="pe-4"><span class="badge bg-danger px-3 py-2"><i class="fa-solid fa-triangle-exclamation me-1"></i> OVERDUE</span></td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light text-muted py-2 text-center small font-mono">
+            <i class="fa-solid fa-clock-rotate-left me-1"></i> Live Audit Trail Active. Append-Only Logic Operational.
+        </div>
+    </div>
+</div>

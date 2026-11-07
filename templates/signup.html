@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Armoury System - Provision Officer</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 40px; }
+        .form-container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 6px; font-weight: bold; color: #34495e; }
+        input[type="text"], input[type="password"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #2980b9; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background-color: #3498db; }
+        .flash-messages { background-color: #f8d7da; color: #721c24; padding: 12px; border-radius: 4px; margin-bottom: 20px; list-style: none; }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>Officer Profile Provisioning Gateway</h2>
+
+    <!-- Flask Flash Messages Handling UI Context Component -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flash-messages">
+          {% for category, message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form action="/signup" method="POST">
+        <div class="form-group">
+            <label for="service_number">Service Number / Force ID:</label>
+            <input type="text" id="service_number" name="service_number" placeholder="e.g. RDU-99214" required>
+        </div>
+
+        <div class="form-group">
+            <label for="full_name">Full Name:</label>
+            <input type="text" id="full_name" name="full_name" placeholder="e.g. John Doe" required>
+        </div>
+
+        <div class="form-group">
+            <label for="rank">Rank / Designation:</label>
+            <select id="rank" name="rank" required>
+                <option value="" disabled selected>Select Officer Rank</option>
+                <option value="Constable">Constable</option>
+                <option value="Corporal">Corporal</option>
+                <option value="Sergeant">Sergeant</option>
+                <option value="Inspector">Inspector</option>
+                <option value="Superintendent">Superintendent</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="role_permissions">Access Clearance Level:</label>
+            <select id="role_permissions" name="role_permissions" required>
+                <option value="" disabled selected>Select Permissions</option>
+                <option value="Field_Officer">Field Officer (Standard Access)</option>
+                <option value="Armourer">Armourer (Transactional Execution)</option>
+                <option value="Admin">System Administrator (Root Operations)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="password"> Portal Password :</label>
+            <input type="password" id="password" name="password" placeholder="Enter secure alphanumeric credentials" required>
+        </div>
+
+        <button type="submit">Provision System Profile</button>
+    </form>
+</div>
+
+</body>
+</html>

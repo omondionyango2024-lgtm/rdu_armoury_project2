@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow border-0 rounded-3 bg-white p-4">
+            <div class="text-center my-3">
+                <i class="fa-solid fa-lock text-primary fa-3x mb-2"></i>
+                <h2 class="fw-bold text-dark">RDU PORTAL ACCESS</h2>
+                <p class="text-muted small font-mono text-uppercase">Gateway Authentication</p>
+            </div>
+            <hr class="text-muted my-3">
+
+            <form action="/login" method="POST" autocomplete="off">
+                <!-- SERVICE NUMBER FIELD -->
+                <div class="mb-3">
+                    <label for="service_number" class="form-label font-mono text-secondary small">Service ID Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-id-badge text-muted"></i></span>
+                        <input type="text" id="service_number" name="service_number" class="form-control font-mono" placeholder="e.g. 1234" required>
+                    </div>
+                </div>
+
+                <!-- PASSWORD FIELD -->
+                <div class="mb-4">
+                    <label for="password" class="form-label font-mono text-secondary small">Secret Pass Code</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-key text-muted"></i></span>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="••••••••••••" required>
+                    </div>
+                </div>
+
+                <!-- SUBMIT BUTTON -->
+                <button type="submit" id="submit_btn" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i> Authenticate Credentials
+                </button>
+            </form>
+            <div class="text-center mt-3">
+                <p class="text-muted small">New officer?
+                    <a href="/signup" class="text-primary fw-bold text-decoration-none">Signup here</a>
+                </p>
+            </div>
+        </div>
+        <div class="text-center mt-3 small font-mono text-muted" style="font-size: 0.75rem;">
+            <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> Warning: Activity logged for compliance monitoring.
+        </div>
+    </div>
+</div>
+{% endblock %}
