@@ -22,7 +22,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize database extension instance with active application context
 db.init_app(app)
 
-# Creation block isolated to target explicit database layer exceptions
+# Global execution context check: forces automatic generation of tables on deployment platforms
 with app.app_context():
     try:
         db.create_all()
@@ -178,7 +178,7 @@ def process_checkout():
         flash(f'Asset tactical checkout committed successfully. Serial {weapon_serial} signed to Officer.', 'success')
     except (ValueError, SQLAlchemyError):
         db.session.rollback()
-        flash('Critical Transaction Pipeline Fault: Database error or invalid date format. Rollback applied.', 'danger')
+        flash('Transaction Pipeline Fault: Database error or invalid date format. Rollback applied.', 'danger')
 
     return redirect(url_for('dashboard'))
 
@@ -190,5 +190,16 @@ def logout():
     return redirect(url_for('login_view'))
 
 
+# =========================================================================
+# STANDARD SYSTEM RUNTIME ROUTINE LAYER
+# =========================================================================
+
 if __name__ == '__main__':
+    with app.app_context():
+        try:
+            db.create_all()
+            print("[SYSTEM LOG] PostgreSQL database scheme initialized and verified.")
+        except Exception as system_init_error:
+            print(f"[SYSTEM LOG] Startup error during database verification: {system_init_error}")
+
     app.run(debug=True)
