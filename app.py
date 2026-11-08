@@ -1,9 +1,10 @@
 # =========================================================================
 # SYSTEM APPLICATION CONTROLLER & BUSINESS LOGIC ENGINE
 # COMPLIANCE: FLASK-SQLALCHEMY ACTIVE APPLICATION CONTEXT RULES
-# CORRECTION APPLIED: ENFORCED SYSTEM-WIDE UNIFORM USE OF 'password_hash'
+# CORRECTION APPLIED: DYNAMIC PROD/DEV DATABASE ROUTING INTERFACE
 # =========================================================================
 
+import os
 from datetime import datetime
 from flask import Flask, request, session, redirect, url_for, flash, render_template
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -15,19 +16,29 @@ app = Flask(__name__)
 # System Encryption Security Key for Client-Side Session Signatures
 app.secret_key = 'RDU_APS_METADATA_SECRET_CRYPTO_KEY'
 
-# Relational Database Connection String mapping parameters
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:admin@localhost:5432/rdu_aps_secure_armoury_tracking_system'
+# DYNAMIC DATABASE HOST ROUTING MATRIX
+# Automatically intercepts live cloud configurations while safeguarding local setups
+if os.environ.get('DATABASE_URL'):
+    # Render builds database URLs with 'postgres://', but SQLAlchemy 2.0 strictly requires 'postgresql://'
+    database_uri = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
+else:
+    # Local fallback for development workstation environment
+    database_uri = 'postgresql://postgres:admin@localhost:5432/rdu_aps_secure_armoury_tracking_system'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize database extension instance with active application context
 db.init_app(app)
 
-# Global execution context check: forces automatic generation of tables on deployment platforms
+# GLOBAL INITIALIZATION BLOCK: Enforces structural schema architecture generation on cloud runtimes
 with app.app_context():
     try:
         db.create_all()
-    except SQLAlchemyError:
+        print("[SYSTEM LOG] PostgreSQL database architecture verified and synced successfully.")
+    except SQLAlchemyError as schema_err:
         db.session.rollback()
+        print(f"[SYSTEM LOG] Exception intercepted during table deployment: {schema_err}")
 
 # =========================================================================
 # ROUTING LOGIC LAYER A: USER AUTHENTICATION & PORTAL PROTECTION GATEWAYS
@@ -55,11 +66,11 @@ def process_login():
 
     if user:
         print(f"[DEBUG] Found matching user row in database!")
-        print(f"[DEBUG] Stored Hash String in DB: '{user.password_hash}'")  # CORRECTED TO HASH
+        print(f"[DEBUG] Stored Hash String in DB: '{user.password_hash}'")
         print(f"[DEBUG] Length of Stored Hash: {len(user.password_hash) if user.password_hash else 0} characters")
 
         try:
-            is_valid = check_password_hash(user.password_hash, user_input_pass)  # CORRECTED TO HASH
+            is_valid = check_password_hash(user.password_hash, user_input_pass)
             print(f"[DEBUG] Werkzeug check_password_hash outcome: {is_valid}")
         except Exception as hash_err:
             print(f"[DEBUG] Hashing runtime error encountered: {hash_err}")
@@ -106,15 +117,16 @@ def process_signup():
             full_name=name,
             rank=rank_designation,
             role_permissions=role_clearance,
-            password_hash=generate_password_hash(plain_password),  # CORRECTED TO HASH
+            password_hash=generate_password_hash(plain_password),
             account_status='Active'
         )
         db.session.add(new_user)
         db.session.commit()
         flash('Officer user profile provisioned successfully! You can now log into the portal.', 'success')
         return redirect(url_for('login_view'))
-    except SQLAlchemyError:
+    except SQLAlchemyError as signup_db_err:
         db.session.rollback()
+        print(f"[CRITICAL ERROR] Core registration handler crash details: {signup_db_err}")
         flash('Relational database transaction error. Account creation sequence aborted.', 'danger')
         return redirect(url_for('process_signup'))
 
@@ -191,15 +203,7 @@ def logout():
 
 
 # =========================================================================
-# STANDARD SYSTEM RUNTIME ROUTINE LAYER
+# STANDARD EXECUTION ROUTINE LAYER: LOCAL TESTING ENVIRONMENT ONLY
 # =========================================================================
-
 if __name__ == '__main__':
-    with app.app_context():
-        try:
-            db.create_all()
-            print("[SYSTEM LOG] PostgreSQL database scheme initialized and verified.")
-        except Exception as system_init_error:
-            print(f"[SYSTEM LOG] Startup error during database verification: {system_init_error}")
-
     app.run(debug=True)
