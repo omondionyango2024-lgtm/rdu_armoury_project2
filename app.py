@@ -31,14 +31,19 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize database extension instance with active application context
 db.init_app(app)
 
-# GLOBAL INITIALIZATION BLOCK: Enforces structural schema architecture generation on cloud runtimes
-with app.app_context():
+# =========================================================================
+# LIVE PRODUCTION SCHEMATIC INITIALIZER
+# Forces Render to check and generate missing SQL tables on first page request
+# =========================================================================
+@app.before_request
+def initialize_database_schema_on_startup():
+    # Removes itself after running once so it never slows down your application
+    app.before_request_funcs[None].remove(initialize_database_schema_on_startup)
     try:
         db.create_all()
-        print("[SYSTEM LOG] PostgreSQL database architecture verified and synced successfully.")
-    except SQLAlchemyError as schema_err:
-        db.session.rollback()
-        print(f"[SYSTEM LOG] Exception intercepted during table deployment: {schema_err}")
+        print("[PROD INIT] PostgreSQL database schema verified and generated.")
+    except Exception as initialization_failure:
+        print(f"[PROD INIT CRITICAL] Table generation crashed: {initialization_failure}")
 
 # =========================================================================
 # ROUTING LOGIC LAYER A: USER AUTHENTICATION & PORTAL PROTECTION GATEWAYS
