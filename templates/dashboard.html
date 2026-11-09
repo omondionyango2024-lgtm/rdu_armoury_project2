@@ -1,60 +1,215 @@
-<!-- dashboard.html - Main Operations Dashboard Control Panel -->
-{% extends 'base.html' %}
-{% block content %}
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card metric-card shadow-sm h-100 bg-white" style="border-left-color: var(--emerald);">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted text-uppercase small fw-bold mb-1">Available Weapons</h6>
-                    <h2 class="fw-bold text-dark m-0">{{ available }} <span class="fs-6 fw-normal text-muted">Rifles</span></h2>
-                    <small class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Ready for mobilization</small>
-                </div>
-                <div class="text-success"><i class="fa-solid fa-gun fa-2x"></i></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card metric-card shadow-sm h-100 bg-white" style="border-left-color: #3498db;">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted text-uppercase small fw-bold mb-1">Active Deployments</h6>
-                    <h2 class="fw-bold text-dark m-0">{{ deployed }} <span class="fs-6 fw-normal text-muted">Units</span></h2>
-                    <small class="text-primary"><i class="fa-solid fa-satellite-dish me-1"></i>Operational footprint</small>
-                </div>
-                <div class="text-primary"><i class="fa-solid fa-person-military-rifle fa-2x"></i></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card metric-card shadow-sm h-100 bg-white" style="border-left-color: var(--crimson);">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted text-uppercase small fw-bold mb-1">Overdue Returns</h6>
-                    <h2 class="fw-bold text-dark m-0">1 <span class="fs-6 fw-normal text-muted">Flagged</span></h2>
-                    <small class="text-danger fw-bold"><i class="fa-solid fa-circle-exclamation me-1"></i>Window breach</small>
-                </div>
-                <div class="text-danger"><i class="fa-solid fa-triangle-exclamation fa-2x"></i></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card metric-card shadow-sm h-100 bg-white" style="border-left-color: #f1c40f;">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted text-uppercase small fw-bold mb-1">Low Ammunition</h6>
-                    <h2 class="fw-bold text-dark m-0">1 <span class="fs-6 fw-normal text-muted">Batch</span></h2>
-                    <small class="text-danger font-mono"><i class="fa-solid fa-box-open me-1"></i>9mm alert margin</small>
-                </div>
-                <div class="text-warning"><i class="fa-solid fa-boxes-stacked fa-2x"></i></div>
-            </div>
-        </div>
-    </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDU-APS Secure Armoury Platform - Dashboard</title>
+    <!-- Modern Styling CDN -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        body { background-color: #75f175; font-family: 'Segoe UI', system-ui, sans-serif; }
 
-<div class="row g-4">
-    <!-- Load separate subcomponents for form logic entries and table visualization layout records -->
-    {% include 'components/checkout_form.html' %}
-    {% include 'components/logs_table.html' %}
-</div>
-{% endblock %}
+        .stat-card { border: none; border-radius: 12px; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .stat-card:hover { transform: translateY(-3px); }
+        .card-icon { font-size: 2.5rem; opacity: 0.3; }
+        .dashboard-header { border-bottom: 4px solid #d81d7b; padding-bottom: 10px; margin-bottom: 25px; color: #081bec; }
+        .panel-container { background: #e7e2e2; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 100%; }
+        .table-responsive { max-height: 400px; overflow-y: auto; }
+        .badge-status { font-size: 0.85rem; padding: 6px 12px; border-radius: 30px; }
+    </style>
+</head>
+<body>
+
+<!-- Top Secure Navigation Bar -->
+<nav class="navbar navbar-dark shadow-sm py-3" style="background-color: #2a6030 !important;">
+
+    <!-- FORCED STRIPPED FLEX WRAPPER (Bypasses Bootstrap container limits) -->
+    <div class="d-flex align-items-center justify-content-between w-100 px-4">
+
+        <!-- ========================================== -->
+        <!-- GROUP 1: LOCKED TO THE FAR LEFT           -->
+        <!-- ========================================== -->
+       <a class="navbar-brand fw-bold text-uppercase m-3" href="#" style="font-size: 24px !important; letter-spacing: 2px; color: #e12d3f !important; font-weight: 800 !important;">
+    <i class="fa-solid fa-shield-halved me-3 text-warning"></i>RDU-APS SECURE FIREARM PORTAL
+</a>
+
+        <!-- ========================================== -->
+        <!-- GROUP 2: LOCKED TO THE FAR RIGHT          -->
+        <!-- ========================================== -->
+        <div class="d-flex align-items-center gap-3">
+            <span class="navbar-text text-white m-0" style="font-size: 15px; font-family: sans-serif;">
+                <i class="fa-solid fa-user-gear me-1 text-info"></i> Officer: <strong class="text-light">{{ session.get('full_name', '') }}</strong> ({{ session.get('role', 'Armourer') }})
+            </span>
+            <a href="/logout" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold shadow-sm" style="font-size: 15px;">
+                <i class="fa-solid fa-power-off me-1"></i>Logout
+            </a>
+        </div>
+
+    </div>
+</nav>
+    <!-- Main System Space Workspace -->
+    <div class="container-fluid p-4">
+
+        <!-- Alerts Broadcast Layer -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'danger' else 'danger' }} alert-dismissible fade show rounded-3" role="alert">
+                        <i class="fa-solid {{ 'fa-circle-check' if category == 'success' else 'fa-triangle-exclamation' }} me-2"></i>{{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Workspace Title Header -->
+        <div class="dashboard-header d-flex justify-content-between align-items-center">
+            <h4><i class="fa-solid fa-chart-line me-2"></i>Operational Control Dashboard</h4>
+            <small class="text-muted d-none d-sm-inline">System Status: Active Logic Operational</small>
+        </div>
+
+        <!-- 1. METRICS & QUANTUM BLOCK TRACKERS LAYER -->
+        <div class="row g-4 mb-4">
+            <!-- Available Stock Tracker -->
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card stat-card bg-primary text-white h-100">
+                    <div class="card-body d-flex align-items-center justify-content-between p-4">
+                        <div>
+                            <h6 class="text-uppercase fw-semibold mb-1 opacity-75">Available Hardware Inventory</h6>
+                            <h2 class="display-5 fw-bold mb-0">{{ available }}</h2>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-box-archive"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Deployment Tracker -->
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card stat-card bg-warning text-dark h-100">
+                    <div class="card-body d-flex align-items-center justify-content-between p-4">
+                        <div>
+                            <h6 class="text-uppercase fw-semibold mb-1 opacity-75">Active Tactical Deployments</h6>
+                            <h2 class="display-5 fw-bold mb-0">{{ deployed }}</h2>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-person-military-to-person"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Registry Statistics Quick View -->
+            <div class="col-12 col-sm-12 col-lg-4">
+                <div class="card stat-card bg-dark text-white h-100">
+                    <div class="card-body d-flex align-items-center justify-content-between p-4">
+                        <div>
+                            <h6 class="text-uppercase fw-semibold mb-1 opacity-75">System Compliance Monitoring</h6>
+                            <p class="small mb-0 opacity-70"><i class="fa-solid fa-clock-rotate-left me-1"></i>All system activities are actively logged for compliance verification.</p>
+                        </div>
+                        <div class="card-icon"><i class="fa-solid fa-gavel"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. DATA GRIDS & TRANSACTION CONTROL PANELS LAYER -->
+        <div class="row g-4">
+
+            <!-- Left Grid: Operational Deployment Logs Trace Grid -->
+            <div class="col-12 col-xl-8">
+                <div class="panel-container">
+                    <h5 class="mb-4 text-secondary"><i class="fa-solid fa-list-check me-2"></i>Active Operational Field Logs</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle border-light">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Log Ref ID</th>
+                                    <th>Officer Assignment</th>
+                                    <th>Firearm Serial ID</th>
+                                    <th>Operational Purpose</th>
+                                    <th>Expected Return Timeline</th>
+                                    <th>Status Badge</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if active_logs %}
+                                    {% for log in active_logs %}
+                                    <tr>
+                                        <td><strong>#{{ log.id }}</strong></td>
+                                        <td>{{ log.officer.full_name }} <span class="text-muted small">({{ log.officer.service_number }})</span></td>
+                                        <td><span class="badge bg-secondary font-monospace">{{ log.firearm.serial_number }}</span></td>
+                                        <td>{{ log.purpose_operation }}</td>
+                                        <td>{{ log.expected_return_date }}</td>
+                                        <td>
+                                            <span class="badge badge-status {{ 'bg-danger text-white' if log.log_status == 'Overdue' else 'bg-success text-white' }}">
+                                                {{ log.log_status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5 text-muted">
+                                            <i class="fa-solid fa-folder-open d-block display-6 mb-3 opacity-50"></i>
+                                            No active field or overdue deployment logs registered inside cloud files.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Grid: Certified Armourer Checkout Controller Form -->
+            <div class="col-12 col-xl-4">
+                <div class="panel-container">
+                    <h5 class="mb-3 text-secondary"><i class="fa-solid fa-right-from-bracket me-2"></i>Tactical Asset Checkout</h5>
+
+                    {% if session.get('role') == 'Armourer' or session.get('role') == 'System Administrator' %}
+                        <p class="small text-muted mb-4">Certified Armourer interface window for processing tactical field assignments.</p>
+                        <form action="/process_checkout" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-uppercase">Officer Force ID / Service Num</label>
+                                <label>
+                                    <input type="text" name="officer_service_number" class="form-control rounded-3" placeholder="e.g. RDU-7742" required>
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-uppercase">Hardware Serial Number</label>
+                                <label>
+                                    <input type="text" name="weapon_serial" class="form-control rounded-3" placeholder="e.g. RDU-SIG-9081" required>
+                                </label>
+                            </div>
+                             <div class="mb-3">
+                                <label class="form-label small fw-bold text-uppercase">Operational Mission / Purpose</label>
+                                 <label>
+                                     <textarea name="operation" class="form-control rounded-3" rows="2" placeholder="Describe tactical deployment objective..." required></textarea>
+                                 </label>
+                             </div>
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold text-uppercase">Expected Field Return Date</label>
+                                <label>
+                                    <input type="date" name="expected_return" class="form-control rounded-3" required>
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-dark w-100 rounded-3 py-2 fw-semibold">
+                                <i class="fa-solid fa-file-signature me-2"></i>Commit Checkout Transaction
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-light border text-center p-4 my-4 rounded-3">
+                            <i class="fa-solid fa-lock display-6 text-danger mb-3 opacity-75"></i>
+                            <h6 class="fw-bold text-dark">Checkout Gate Locked</h6>
+                            <p class="small text-muted mb-0">Your current security clearance level ({{ session.get('role') }}) restricts access to asset checkout functions. Certified Armourer authentication required.</p>
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script assets for dismissible alert components -->
+    <script src="https://cloudflare.com"></script>
+</body>
+</html>
