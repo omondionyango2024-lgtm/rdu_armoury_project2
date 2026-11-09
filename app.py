@@ -208,6 +208,33 @@ def logout():
 
 
 # =========================================================================
+# TEMPORARY LOGISTICAL MANAGEMENT ROUTINE: STOCK INVENTORY SEEDER
+# Run this once on the live website to stock your armourer shelves with test assets
+# =========================================================================
+@app.route('/seed-armoury-stock')
+def seed_armoury_stock():
+    try:
+        # Check if items already exist to avoid accidental duplicate records
+        existing_stock = db.session.query(FirearmInventory).first()
+        if existing_stock:
+            return "Armoury Shelves Already Stocked! No injection required.", 200
+
+        # Create three standard-issue field assets for tactical validation
+        weapon1 = FirearmInventory(serial_number="RDU-SIG-9081", firearm_type="Pistol", model="Sig Sauer P320",
+                                   caliber="9x19mm", operational_status="Available")
+        weapon2 = FirearmInventory(serial_number="RDU-AR-4402", firearm_type="Assault Rifle", model="M4A1 Carbine",
+                                   caliber="5.56x45mm", operational_status="Available")
+        weapon3 = FirearmInventory(serial_number="RDU-GLK-1793", firearm_type="Pistol", model="Glock 17",
+                                   caliber="9x19mm", operational_status="Available")
+
+        db.session.add_all([weapon1, weapon2, weapon3])
+        db.session.commit()
+        return "Logistical Injection Successful! 3 Active Firearms Added to Live PostgreSQL.", 200
+
+    except Exception as seed_err:
+        db.session.rollback()
+        return f"Logistical Injection Pipeline Failed: {seed_err}", 500
+# =========================================================================
 # STANDARD EXECUTION ROUTINE LAYER: LOCAL TESTING ENVIRONMENT ONLY
 # =========================================================================
 if __name__ == '__main__':
