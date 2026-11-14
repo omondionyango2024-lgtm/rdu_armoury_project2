@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RDU-APS Secure Armoury Platform - Dashboard</title>
     <!-- Modern Styling CDN -->
-    <link rel="stylesheet" href="https://cloudflare.com">
+    <link rel="stylesheet" href="https://jsdelivr.net">
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
         body { background-color: #75f175; font-family: 'Segoe UI', system-ui, sans-serif; }
-
         .stat-card { border: none; border-radius: 12px; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .stat-card:hover { transform: translateY(-3px); }
         .card-icon { font-size: 2.5rem; opacity: 0.3; }
@@ -23,16 +22,15 @@
 
 <!-- Top Secure Navigation Bar -->
 <nav class="navbar navbar-dark shadow-sm py-3" style="background-color: #2a6030 !important;">
-
     <!-- FORCED STRIPPED FLEX WRAPPER (Bypasses Bootstrap container limits) -->
     <div class="d-flex align-items-center justify-content-between w-100 px-4">
 
         <!-- ========================================== -->
         <!-- GROUP 1: LOCKED TO THE FAR LEFT           -->
         <!-- ========================================== -->
-       <a class="navbar-brand fw-bold text-uppercase m-3" href="#" style="font-size: 24px !important; letter-spacing: 2px; color: #e12d3f !important; font-weight: 800 !important;">
-    <i class="fa-solid fa-shield-halved me-3 text-warning"></i>RDU-APS SECURE FIREARM PORTAL
-</a>
+        <a class="navbar-brand fw-bold text-uppercase m-3" href="#" style="font-size: 24px !important; letter-spacing: 2px; color: #e12d3f !important; font-weight: 800 !important;">
+            <i class="fa-solid fa-shield-halved me-3 text-warning"></i>RDU-APS SECURE FIREARM PORTAL
+        </a>
 
         <!-- ========================================== -->
         <!-- GROUP 2: LOCKED TO THE FAR RIGHT          -->
@@ -48,6 +46,7 @@
 
     </div>
 </nav>
+
     <!-- Main System Space Workspace -->
     <div class="container-fluid p-4">
 
@@ -63,10 +62,16 @@
             {% endif %}
         {% endwith %}
 
-        <!-- Workspace Title Header -->
-        <div class="dashboard-header d-flex justify-content-between align-items-center">
+        <!-- Workspace Title Header (With Consolidated Inventory Action Redirection Tool) -->
+        <div class="dashboard-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h4><i class="fa-solid fa-chart-line me-2"></i>Operational Control Dashboard</h4>
-            <small class="text-muted d-none d-sm-inline">System Status: Active Logic Operational</small>
+            <div class="d-flex align-items-center gap-3">
+                <!-- Portal Redirect Button out to firearms_inventory.html -->
+                <a href="{{ url_for('firearms_inventory') }}" class="btn btn-dark fw-bold px-3 shadow-sm rounded-pill" style="border: 2px solid #d81d7b;">
+    <i class="fa-solid fa-warehouse me-2 text-warning"></i>Manage Inventory & Ammo
+</a>
+                <small class="text-muted d-none d-sm-inline">System Status: Active Logic Operational</small>
+            </div>
         </div>
 
         <!-- 1. METRICS & QUANTUM BLOCK TRACKERS LAYER -->
@@ -164,6 +169,7 @@
             <div class="col-12 col-xl-4">
                 <div class="panel-container">
                     <h5 class="mb-3 text-secondary"><i class="fa-solid fa-right-from-bracket me-2"></i>Tactical Asset Checkout</h5>
+
 
                     {% if session.get('role') == 'Armourer' or session.get('role') == 'System Administrator' %}
                         <p class="small text-muted mb-4">Certified Armourer interface window for processing tactical field assignments.</p>
