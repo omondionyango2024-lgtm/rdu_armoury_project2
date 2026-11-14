@@ -31,6 +31,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize database extension instance with active application context
 db.init_app(app)
 
+
 # =========================================================================
 # LIVE PRODUCTION SCHEMATIC INITIALIZER
 # Forces Render to check and generate missing SQL tables on first page request
@@ -44,6 +45,7 @@ def initialize_database_schema_on_startup():
         print("[PROD INIT] PostgreSQL database schema verified and generated.")
     except Exception as initialization_failure:
         print(f"[PROD INIT CRITICAL] Table generation crashed: {initialization_failure}")
+
 
 # =========================================================================
 # ROUTING LOGIC LAYER A: USER AUTHENTICATION & PORTAL PROTECTION GATEWAYS
@@ -63,34 +65,21 @@ def process_login():
     service_num = request.form.get('service_number', '').strip()
     user_input_pass = request.form.get('password', '').strip()
 
-    print(f"\n[DEBUG] --- LOGIN TRY ---")
-    print(f"[DEBUG] Received Service Number from form: '{service_num}'")
-    print(f"[DEBUG] Received Password from form: '{user_input_pass}'")
-
     user = db.session.query(User).filter_by(service_number=service_num).first()
 
     if user:
-        print(f"[DEBUG] Found matching user row in database!")
-        print(f"[DEBUG] Stored Hash String in DB: '{user.password_hash}'")
-        print(f"[DEBUG] Length of Stored Hash: {len(user.password_hash) if user.password_hash else 0} characters")
-
         try:
             is_valid = check_password_hash(user.password_hash, user_input_pass)
-            print(f"[DEBUG] Werkzeug check_password_hash outcome: {is_valid}")
-        except Exception as hash_err:
-            print(f"[DEBUG] Hashing runtime error encountered: {hash_err}")
+        except Exception:
             is_valid = False
 
         if is_valid:
             session['user_id'] = user.id
             session['full_name'] = user.full_name
             session['role'] = user.role_permissions
-            flash(f'Authentication successful. Access granted.', 'success')
+            flash('Authentication successful. Access granted.', 'success')
             return redirect(url_for('dashboard'))
-    else:
-        print(f"[DEBUG] User NOT found in database row lookup.")
 
-    print(f"[DEBUG] -----------------\n")
     flash('Security Authentication Failed. Invalid service number or pin.', 'danger')
     return redirect(url_for('login_view'))
 
@@ -198,6 +187,24 @@ def process_checkout():
         flash('Transaction Pipeline Fault: Database error or invalid date format. Rollback applied.', 'danger')
 
     return redirect(url_for('dashboard'))
+
+
+# =========================================================================
+# ROUTING LOGIC LAYER D: FIREARMS & AMMUNITION INVENTORY MANAGEMENT
+# =========================================================================
+
+@app.route('/firearms-inventory')
+def firearms_inventory():
+    if 'user_id' not in session:
+        flash('Access Denied: Please authenticate security credentials.', 'danger')
+        return redirect(url_for('login_view'))
+
+    try:
+        firearms_list = db.session.query(FirearmInventory).all()
+    except SQLAlchemyError:
+        firearms_list = []
+
+    return render_template('firearms_inventory.html', firearms=firearms_list)
 
 
 @app.route('/logout')

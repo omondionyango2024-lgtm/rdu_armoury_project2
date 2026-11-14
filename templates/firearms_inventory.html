@@ -1,10 +1,396 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDU-APS Secure Armoury Platform - Firearms & Ammo Inventory</title>
+    <!-- Bootstrap 5 and FontAwesome CSS Integration (Matches dashboard.html) -->
+    <link rel="stylesheet" href="https://jsdelivr.net">
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        body { background-color: #75f175; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .stat-card { border: none; border-radius: 12px; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .stat-card:hover { transform: translateY(-3px); }
+        .dashboard-header { border-bottom: 4px solid #d81d7b; padding-bottom: 10px; margin-bottom: 25px; color: #081bec; }
+        .panel-container { background: #e7e2e2; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 100%; }
+        .table-responsive { max-height: 500px; overflow-y: auto; }
+        .badge-status { font-size: 0.85rem; padding: 6px 12px; border-radius: 30px; }
+        .nav-tabs .nav-link { color: #495057; font-weight: 600; border-radius: 8px 8px 0 0; }
+        .nav-tabs .nav-link.active { background-color: #ffffff; border-color: #dee2e6 #dee2e6 #ffffff; color: #2a6030; }
+    </style>
 </head>
 <body>
-$END$
+
+<!-- Top Secure Navigation Bar (Matches dashboard.html) -->
+<nav class="navbar navbar-dark shadow-sm py-3" style="background-color: #2a6030 !important;">
+    <div class="d-flex align-items-center justify-content-between w-100 px-4">
+        <a class="navbar-brand fw-bold text-uppercase m-3" href="{{ url_for('dashboard') }}" style="font-size: 24px !important; letter-spacing: 2px; color: #e12d3f !important; font-weight: 800 !important;">
+            <i class="fa-solid fa-shield-halved me-3 text-warning"></i>RDU-APS SECURE FIREARM PORTAL
+        </a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="navbar-text text-white m-0" style="font-size: 15px; font-family: sans-serif;">
+                <i class="fa-solid fa-user-gear me-1 text-info"></i> Officer: <strong class="text-light">{{ session.get('full_name', '') }}</strong> ({{ session.get('role', 'Armourer') }})
+            </span>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold shadow-sm" style="font-size: 15px;">
+                <i class="fa-solid fa-power-off me-1"></i>Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Workspace Fluid Grid -->
+<div class="container-fluid p-4">
+
+    <!-- Alerts Broadcast Layer -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'danger' else 'danger' }} alert-dismissible fade show rounded-3" role="alert">
+                    <i class="fa-solid {{ 'fa-circle-check' if category == 'success' else 'fa-triangle-exclamation' }} me-2"></i>{{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Workspace Title Header with Back Button to Dashboard -->
+    <div class="dashboard-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h4 class="mb-0">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-dark btn-sm rounded-pill me-3 px-3 fw-bold" style="border: 2px solid #d81d7b;">
+                <i class="fa-solid fa-arrow-left me-1 text-warning"></i> Back to Dashboard
+            </a>
+            <i class="fa-solid fa-warehouse me-2"></i>Arsenal Logistics & Control Center
+        </h4>
+        <small class="text-muted d-none d-sm-inline">System Status: Active Logic Operational</small>
+    </div>
+
+    <!-- Operational Ammunition Metrics Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card bg-primary text-white h-100">
+                <div class="card-body p-3">
+                    <h6 class="text-uppercase small fw-semibold mb-1 opacity-75">Total Ammo Acquired</h6>
+                    <h3 class="fw-bold mb-0">14,500 <span class="small fw-normal opacity-75" style="font-size: 0.9rem;">rds</span></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card bg-info text-dark h-100">
+                <div class="card-body p-3">
+                    <h6 class="text-uppercase small fw-semibold mb-1 opacity-75">Distributed to Units</h6>
+                    <h3 class="fw-bold mb-0">8,200 <span class="small fw-normal opacity-75" style="font-size: 0.9rem;">rds</span></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card bg-danger text-white h-100">
+                <div class="card-body p-3">
+                    <h6 class="text-uppercase small fw-semibold mb-1 opacity-75">Total Expended</h6>
+                    <h3 class="fw-bold mb-0">3,450 <span class="small fw-normal opacity-75" style="font-size: 0.9rem;">rds</span></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card bg-dark text-white h-100">
+                <div class="card-body p-3">
+                    <h6 class="text-uppercase small fw-semibold mb-1 opacity-75">Net Reserve Balance</h6>
+                    <h3 class="fw-bold mb-0 text-success">2,850 <span class="small fw-normal opacity-75 text-white" style="font-size: 0.9rem;">rds</span></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Tabbed Panel Container -->
+    <div class="panel-container">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+            <ul class="nav nav-tabs border-bottom-0" id="inventoryTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="firearms-tab" data-bs-toggle="tab" data-bs-target="#firearms-pane" type="button" role="tab">
+                        <i class="fa-solid fa-gun me-2"></i>Firearms Registry
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="ammo-tab" data-bs-toggle="tab" data-bs-target="#ammo-pane" type="button" role="tab">
+                        <i class="fa-solid fa-boxes-stacked me-2"></i>Ammunition & Ledger
+                    </button>
+                </li>
+            </ul>
+
+            <div>
+                <button type="button" class="btn btn-success fw-semibold shadow-sm" id="btnAddFirearm" data-bs-toggle="modal" data-bs-target="#addFirearmModal">
+                    <i class="fa-solid fa-plus me-1"></i> Add New Firearm
+                </button>
+                <button type="button" class="btn text-white d-none fw-semibold shadow-sm" style="background-color: #6f42c1;" id="btnLogAmmo" data-bs-toggle="modal" data-bs-target="#ammoLedgerModal">
+                    <i class="fa-solid fa-square-plus me-1"></i> Log Ammo Transaction
+                </button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="inventoryTabsContent">
+
+            <!-- PANEL 1: FIREARMS REGISTRY (Connected to PostgreSQL via Flask) -->
+            <div class="tab-pane fade show active" id="firearms-pane" role="tabpanel" tabindex="0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-light bg-white rounded shadow-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Serial Number</th>
+                                <th>Model</th>
+                                <th>Type / Action</th>
+                                <th>Caliber/Gauge</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody">
+                            {% if firearms %}
+                                {% for weapon in firearms %}
+                                <tr>
+                                    <td><span class="badge bg-secondary font-monospace">{{ weapon.serial_number }}</span></td>
+                                    <td><strong>{{ weapon.model }}</strong></td>
+                                    <td>{{ weapon.firearm_type }}</td>
+                                    <td class="font-monospace">{{ weapon.caliber }}</td>
+                                    <td class="text-center">
+                                        <span class="badge badge-status {{ 'bg-success' if weapon.operational_status == 'Available' else 'bg-warning text-dark' }}">
+                                            {{ weapon.operational_status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        No firearms registered in PostgreSQL yet. Click <strong>+ Add New Firearm</strong> to register one.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+ <!-- PANEL 2: AMMUNITION LOGISTICS LEDGER -->
+            <div class="tab-pane fade" id="ammo-pane" role="tabpanel" tabindex="0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-light bg-white rounded shadow-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Caliber / Specification</th>
+                                <th>Transaction Type</th>
+                                <th>Quantity (Rounds)</th>
+                                <th>Recipient / Batch / Unit</th>
+                                <th class="text-end">Reference Ref</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ammoTableBody">
+                            <tr>
+                                <td class="text-muted font-monospace small">2026-11-10 14:22</td>
+                                <td><strong>5.56x45mm NATO</strong></td>
+                                <td><span class="badge badge-status bg-primary text-white">Acquisition</span></td>
+                                <td class="text-primary font-monospace fw-bold">+5,000</td>
+                                <td>Winchester Bulk Order (Lot #992A)</td>
+                                <td class="text-end font-monospace text-muted">PO-4402</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted font-monospace small">2026-11-10 16:05</td>
+                                <td><strong>9mm Luger</strong></td>
+                                <td><span class="badge badge-status text-white" style="background-color: #6f42c1;">Distribution</span></td>
+                                <td class="font-monospace fw-bold" style="color: #6f42c1;">-500</td>
+                                <td>Alpha Security Team Squad A</td>
+                                <td class="text-end font-monospace text-muted">DIST-081</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted font-monospace small">2026-11-10 18:30</td>
+                                <td><strong>9mm Luger</strong></td>
+                                <td><span class="badge badge-status bg-danger text-white">Expenditure</span></td>
+                                <td class="text-danger font-monospace fw-bold">-120</td>
+                                <td>Live Fire Training Exercise</td>
+                                <td class="text-end font-monospace text-muted">EXP-992</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 1: FIREARM DATA ENTRY -->
+<div class="modal fade" id="addFirearmModal" tabindex="-1" aria-labelledby="addFirearmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="addFirearmModalLabel"><i class="fa-solid fa-gun me-2 text-warning"></i>Acquisition & Firearm Registry</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="firearmForm" onsubmit="handleFirearmSubmit(event)">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label for="serial" class="form-label small text-uppercase fw-semibold text-light">Serial Number *</label>
+                            <input type="text" id="serial" name="serial" required class="form-control bg-secondary text-white border-0 font-monospace">
+                        </div>
+                        <div class="col-6">
+                            <label for="model" class="form-label small text-uppercase fw-semibold text-light">Model *</label>
+                            <input type="text" id="model" name="model" required class="form-control bg-secondary text-white border-0">
+                        </div>
+                        <div class="col-6">
+                            <label for="type" class="form-label small text-uppercase fw-semibold text-light">Firearm Type *</label>
+                            <select id="type" name="type" class="form-select bg-secondary text-white border-0">
+                                <option value="Pistol">Pistol</option>
+                                <option value="Assault Rifle">Assault Rifle</option>
+                                <option value="Shotgun">Shotgun</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="caliber" class="form-label small text-uppercase fw-semibold text-light">Caliber/Gauge *</label>
+                            <input type="text" id="caliber" name="caliber" required placeholder="e.g., 9x19mm" class="form-control bg-secondary text-white border-0">
+                        </div>
+                        <div class="col-12">
+                            <label for="status" class="form-label small text-uppercase fw-semibold text-light">Operational Status</label>
+                            <select id="status" name="status" class="form-select bg-secondary text-white border-0">
+                                <option value="Available">Available</option>
+                                <option value="Deployed">Deployed</option>
+                                <option value="Maintenance">In Maintenance</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success fw-bold">Save Firearm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 2: AMMUNITION TRANSACTION ENTRY -->
+<div class="modal fade" id="ammoLedgerModal" tabindex="-1" aria-labelledby="ammoLedgerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="ammoLedgerModalLabel"><i class="fa-solid fa-box me-2 text-info"></i>Log Ammunition Transaction</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="ammoForm" onsubmit="handleAmmoSubmit(event)">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="ammoTransactionType" class="form-label small text-uppercase fw-semibold text-light">Transaction Activity *</label>
+                            <select id="ammoTransactionType" name="transaction_type" required class="form-select bg-secondary text-white border-0">
+                                <option value="Acquisition">Acquisition (Inbound Procurement)</option>
+                                <option value="Distribution">Distribution (Outbound to Unit)</option>
+                                <option value="Expenditure">Expenditure (Consumed/Fired)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="ammoCaliber" class="form-label small text-uppercase fw-semibold text-light">Caliber / Spec *</label>
+                            <input type="text" id="ammoCaliber" name="caliber" required placeholder="e.g., 5.56x45mm" class="form-control bg-secondary text-white border-0">
+                        </div>
+                        <div class="col-6">
+                          <label for="ammoQty" class="form-label small text-uppercase fw-semibold text-light">Quantity (Rounds) *</label>
+                            <input type="number" id="ammoQty" name="quantity" required min="1" class="form-control bg-secondary text-white border-0 font-monospace">
+                        </div>
+                        <div class="col-6">
+                            <label for="ammoTarget" class="form-label small text-uppercase fw-semibold text-light">Recipient / Source *</label>
+                            <input type="text" id="ammoTarget" name="target" required placeholder="e.g., Squad A" class="form-control bg-secondary text-white border-0">
+                        </div>
+                        <div class="col-6">
+                            <label for="ammoRef" class="form-label small text-uppercase fw-semibold text-light">Reference Voucher</label>
+                            <input type="text" id="ammoRef" name="reference" placeholder="e.g., PO-102" class="form-control bg-secondary text-white border-0 font-monospace">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-dark fw-bold">Commit Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://jsdelivr.net"></script>
+<script>
+    // Switch Action Buttons When Switching Tabs
+    const tabElements = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    tabElements.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function (event) {
+            if (event.target.id === 'firearms-tab') {
+                document.getElementById('btnAddFirearm').classList.remove('d-none');
+                document.getElementById('btnLogAmmo').classList.add('d-none');
+            } else {
+                document.getElementById('btnAddFirearm').classList.add('d-none');
+                document.getElementById('btnLogAmmo').classList.remove('d-none');
+            }
+        });
+    });
+
+    // Preview Firearm Row Addition Locally
+    function handleFirearmSubmit(event) {
+        event.preventDefault();
+        const serial = document.getElementById('serial').value;
+        const model = document.getElementById('model').value;
+        const type = document.getElementById('type').value;
+        const caliber = document.getElementById('caliber').value;
+        const status = document.getElementById('status').value;
+
+        const statusClass = status === "Available" ? "bg-success" : "bg-warning text-dark";
+        const tableBody = document.getElementById('inventoryTableBody');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td><span class="badge bg-secondary font-monospace">${serial}</span></td>
+            <td><strong>${model}</strong></td>
+            <td>${type}</td>
+            <td class="font-monospace">${caliber}</td>
+            <td class="text-center"><span class="badge badge-status ${statusClass}">${status}</span></td>
+        `;
+        tableBody.appendChild(newRow);
+        document.getElementById('firearmForm').reset();
+        bootstrap.Modal.getInstance(document.getElementById('addFirearmModal')).hide();
+    }
+
+    // Preview Ammo Transaction Row Locally
+    function handleAmmoSubmit(event) {
+        event.preventDefault();
+        const type = document.getElementById('ammoTransactionType').value;
+        const caliber = document.getElementById('ammoCaliber').value;
+        const qty = parseInt(document.getElementById('ammoQty').value);
+        const target = document.getElementById('ammoTarget').value;
+        const reference = document.getElementById('ammoRef').value || 'N/A';
+
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+        let badgeStyle = 'bg-primary text-white';
+        let textClass = 'text-primary';
+        let prefix = '+';
+
+        if (type === 'Distribution') {
+            badgeStyle = 'text-white" style="background-color: #6f42c1;';
+            textClass = '" style="color: #6f42c1;';
+            prefix = '-';
+        } else if (type === 'Expenditure') {
+            badgeStyle = 'bg-danger text-white';
+            textClass = 'text-danger';
+            prefix = '-';
+        }
+
+        const tableBody = document.getElementById('ammoTableBody');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td class="text-muted font-monospace small">${timestamp}</td>
+            <td><strong>${caliber}</strong></td>
+            <td><span class="badge badge-status ${badgeStyle}">${type}</span></td>
+            <td class="font-monospace fw-bold ${textClass}">${prefix}${qty.toLocaleString()}</td>
+            <td>${target}</td>
+            <td class="text-end font-monospace text-muted">${reference}</td>
+        `;
+        tableBody.insertBefore(newRow, tableBody.firstChild);
+        document.getElementById('ammoForm').reset();
+        bootstrap.Modal.getInstance(document.getElementById('ammoLedgerModal')).hide();
+    }
+</script>
 </body>
 </html>
