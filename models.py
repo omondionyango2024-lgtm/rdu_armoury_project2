@@ -22,7 +22,7 @@ class User(db.Model):
     full_name = db.Column(db.String(100), nullable=False)
     rank = db.Column(db.String(50), nullable=False)
     role_permissions = db.Column(db.String(30), nullable=False)  # Admin, Armourer, Field_Officer
-    password_hash = db.Column(db.String(255), nullable=False)     # CORRECTED TO STANDARD HASH
+    password_hash = db.Column(db.String(255), nullable=False)
     account_status = db.Column(db.String(20), default='Active', nullable=False)
 
 
@@ -38,7 +38,7 @@ class FirearmInventory(db.Model):
     caliber = db.Column(db.String(30), nullable=False)
     operational_status = db.Column(db.String(30), default='Available', nullable=False)
     cumulative_rounds_fired = db.Column(db.Integer, default=0, nullable=False)
-    date_procured = db.Column(db.Date, nullable=False)
+    date_procured = db.Column(db.Date, default=lambda: datetime.now(timezone.utc).date(), nullable=False)
 
 
 class DeploymentLog(db.Model):
@@ -66,3 +66,33 @@ class DeploymentLog(db.Model):
     expected_return_date = db.Column(db.Date, nullable=False)
     checkin_timestamp = db.Column(db.DateTime(timezone=True), nullable=True)
     log_status = db.Column(db.String(30), default='Active', nullable=False, index=True)
+
+    # Relationships
+    officer = db.relationship(
+        'User',
+        foreign_keys=[officer_id],
+        backref='officer_deployments'
+    )
+    armourer = db.relationship(
+        'User',
+        foreign_keys=[armourer_id],
+        backref='armourer_deployments'
+    )
+    firearm = db.relationship(
+        'FirearmInventory',
+        backref='deployment_history'
+    )
+
+
+class AmmoTransaction(db.Model):
+    """Tracks ammunition acquisitions, unit distributions, and range expenditures."""
+
+    __tablename__ = 'ammo_transactions'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    caliber = db.Column(db.String(50), nullable=False)
+    transaction_type = db.Column(db.String(30), nullable=False)  # Acquisition, Distribution, Expenditure
+    quantity = db.Column(db.Integer, nullable=False)
+    target_unit = db.Column(db.String(100), nullable=False)
+    reference_voucher = db.Column(db.String(50), nullable=True)
+    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

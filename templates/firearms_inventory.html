@@ -64,13 +64,13 @@
         <small class="text-muted d-none d-sm-inline">System Status: Active Logic Operational</small>
     </div>
 
-    <!-- Operational Ammunition Metrics Summary Cards -->
+     <!-- Operational Ammunition Metrics Summary Cards (Connected to Live PostgreSQL Totals) -->
     <div class="row g-4 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card stat-card bg-primary text-white h-100">
                 <div class="card-body p-3">
                     <h6 class="text-uppercase small fw-semibold mb-1 opacity-75">Total Ammo Acquired</h6>
-                    <h3 class="fw-bold mb-0">14,500 <span class="small fw-normal opacity-75" style="font-size: 0.9rem;">rds</span></h3>
+                    <h3 class="fw-bold mb-0">{{ "{:,}".format(acquired) }} <span class="small fw-normal opacity-75" style="font-size: 0.9rem;">rds</span></h3>
                 </div>
             </div>
         </div>
@@ -78,7 +78,7 @@
             <div class="card stat-card bg-info text-dark h-100">
                 <div class="card-body p-3">
                     <h6 class="text-uppercase small fw-semibold mb-1 opacity-75">Distributed to Units</h6>
-                    <h3 class="fw-bold mb-0">8,200 <span class="small fw-normal opacity-75" style="font-size: 0.9rem;">rds</span></h3>
+                    <h3 class="fw-bold mb-0">{{ "{:,}".format(distributed) }} <span class="small fw-normal opacity-75" style="font-size: 0.9rem;">rds</span></h3>
                 </div>
             </div>
         </div>
@@ -86,7 +86,7 @@
             <div class="card stat-card bg-danger text-white h-100">
                 <div class="card-body p-3">
                     <h6 class="text-uppercase small fw-semibold mb-1 opacity-75">Total Expended</h6>
-                    <h3 class="fw-bold mb-0">3,450 <span class="small fw-normal opacity-75" style="font-size: 0.9rem;">rds</span></h3>
+                    <h3 class="fw-bold mb-0">{{ "{:,}".format(expended) }} <span class="small fw-normal opacity-75" style="font-size: 0.9rem;">rds</span></h3>
                 </div>
             </div>
         </div>
@@ -94,13 +94,13 @@
             <div class="card stat-card bg-dark text-white h-100">
                 <div class="card-body p-3">
                     <h6 class="text-uppercase small fw-semibold mb-1 opacity-75">Net Reserve Balance</h6>
-                    <h3 class="fw-bold mb-0 text-success">2,850 <span class="small fw-normal opacity-75 text-white" style="font-size: 0.9rem;">rds</span></h3>
+                    <h3 class="fw-bold mb-0 text-success">{{ "{:,}".format(reserve) }} <span class="small fw-normal opacity-75 text-white" style="font-size: 0.9rem;">rds</span></h3>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Tabbed Panel Container -->
+     <!-- Main Tabbed Panel Container -->
     <div class="panel-container">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
             <ul class="nav nav-tabs border-bottom-0" id="inventoryTabs" role="tablist">
@@ -142,32 +142,33 @@
                             </tr>
                         </thead>
                         <tbody id="inventoryTableBody">
-                            {% if firearms %}
-                                {% for weapon in firearms %}
-                                <tr>
-                                    <td><span class="badge bg-secondary font-monospace">{{ weapon.serial_number }}</span></td>
-                                    <td><strong>{{ weapon.model }}</strong></td>
-                                    <td>{{ weapon.firearm_type }}</td>
-                                    <td class="font-monospace">{{ weapon.caliber }}</td>
-                                    <td class="text-center">
-                                        <span class="badge badge-status {{ 'bg-success' if weapon.operational_status == 'Available' else 'bg-warning text-dark' }}">
-                                            {{ weapon.operational_status }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        No firearms registered in PostgreSQL yet. Click <strong>+ Add New Firearm</strong> to register one.
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
+    {% if firearms %}
+        {% for weapon in firearms %}
+        <tr>
+            <td><span class="badge bg-secondary font-monospace">{{ weapon.serial_number }}</span></td>
+            <td><strong>{{ weapon.make_model }}</strong></td>
+            <td>{{ weapon.weapon_type }}</td>
+            <td class="font-monospace">{{ weapon.caliber }}</td>
+            <td class="text-center">
+                <span class="badge badge-status {{ 'bg-success' if weapon.operational_status == 'Available' else 'bg-warning text-dark' }}">
+                    {{ weapon.operational_status }}
+                </span>
+            </td>
+        </tr>
+        {% endfor %}
+    {% else %}
+        <tr>
+            <td colspan="5" class="text-center py-4 text-muted">
+                No firearms registered in PostgreSQL yet. Click <strong>+ Add New Firearm</strong> to register one.
+            </td>
+        </tr>
+    {% endif %}
+</tbody>
                     </table>
                 </div>
             </div>
- <!-- PANEL 2: AMMUNITION LOGISTICS LEDGER -->
+
+            <!-- PANEL 2: AMMUNITION LOGISTICS LEDGER (Connected to PostgreSQL via Flask) -->
             <div class="tab-pane fade" id="ammo-pane" role="tabpanel" tabindex="0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle border-light bg-white rounded shadow-sm">
@@ -182,30 +183,34 @@
                             </tr>
                         </thead>
                         <tbody id="ammoTableBody">
-                            <tr>
-                                <td class="text-muted font-monospace small">2026-11-10 14:22</td>
-                                <td><strong>5.56x45mm NATO</strong></td>
-                                <td><span class="badge badge-status bg-primary text-white">Acquisition</span></td>
-                                <td class="text-primary font-monospace fw-bold">+5,000</td>
-                                <td>Winchester Bulk Order (Lot #992A)</td>
-                                <td class="text-end font-monospace text-muted">PO-4402</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted font-monospace small">2026-11-10 16:05</td>
-                                <td><strong>9mm Luger</strong></td>
-                                <td><span class="badge badge-status text-white" style="background-color: #6f42c1;">Distribution</span></td>
-                                <td class="font-monospace fw-bold" style="color: #6f42c1;">-500</td>
-                                <td>Alpha Security Team Squad A</td>
-                                <td class="text-end font-monospace text-muted">DIST-081</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted font-monospace small">2026-11-10 18:30</td>
-                                <td><strong>9mm Luger</strong></td>
-                                <td><span class="badge badge-status bg-danger text-white">Expenditure</span></td>
-                                <td class="text-danger font-monospace fw-bold">-120</td>
-                                <td>Live Fire Training Exercise</td>
-                                <td class="text-end font-monospace text-muted">EXP-992</td>
-                            </tr>
+                            {% if ammo_logs %}
+                                {% for log in ammo_logs %}
+                                <tr>
+                                    <td class="text-muted font-monospace small">{{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td><strong>{{ log.caliber }}</strong></td>
+                                    <td>
+                                        {% if log.transaction_type == 'Acquisition' %}
+                                            <span class="badge badge-status bg-primary text-white">Acquisition</span>
+                                        {% elif log.transaction_type == 'Distribution' %}
+                                            <span class="badge badge-status text-white" style="background-color: #6f42c1;">Distribution</span>
+                                        {% else %}
+                                            <span class="badge badge-status bg-danger text-white">Expenditure</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="font-monospace fw-bold {{ 'text-primary' if log.transaction_type == 'Acquisition' else 'text-danger' }}">
+                                        {{ '+' if log.transaction_type == 'Acquisition' else '-' }}{{ "{:,}".format(log.quantity) }}
+                                    </td>
+                                    <td>{{ log.target_unit }}</td>
+                                    <td class="text-end font-monospace text-muted">{{ log.reference_voucher }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        No ammunition transactions logged yet. Click <strong>+ Log Ammo Transaction</strong> to record stock.
+                                    </td>
+                                </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -223,7 +228,7 @@
                 <h5 class="modal-title" id="addFirearmModalLabel"><i class="fa-solid fa-gun me-2 text-warning"></i>Acquisition & Firearm Registry</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="firearmForm" onsubmit="handleFirearmSubmit(event)">
+            <form id="firearmForm" method="POST" action="{{ url_for('add_firearm') }}">
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-6">
@@ -273,7 +278,7 @@
                 <h5 class="modal-title" id="ammoLedgerModalLabel"><i class="fa-solid fa-box me-2 text-info"></i>Log Ammunition Transaction</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="ammoForm" onsubmit="handleAmmoSubmit(event)">
+            <form id="ammoForm" method="POST" action="{{ url_for('log_ammo') }}">
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-12">
@@ -289,7 +294,7 @@
                             <input type="text" id="ammoCaliber" name="caliber" required placeholder="e.g., 5.56x45mm" class="form-control bg-secondary text-white border-0">
                         </div>
                         <div class="col-6">
-                          <label for="ammoQty" class="form-label small text-uppercase fw-semibold text-light">Quantity (Rounds) *</label>
+                            <label for="ammoQty" class="form-label small text-uppercase fw-semibold text-light">Quantity (Rounds) *</label>
                             <input type="number" id="ammoQty" name="quantity" required min="1" class="form-control bg-secondary text-white border-0 font-monospace">
                         </div>
                         <div class="col-6">
@@ -326,71 +331,6 @@
             }
         });
     });
-
-    // Preview Firearm Row Addition Locally
-    function handleFirearmSubmit(event) {
-        event.preventDefault();
-        const serial = document.getElementById('serial').value;
-        const model = document.getElementById('model').value;
-        const type = document.getElementById('type').value;
-        const caliber = document.getElementById('caliber').value;
-        const status = document.getElementById('status').value;
-
-        const statusClass = status === "Available" ? "bg-success" : "bg-warning text-dark";
-        const tableBody = document.getElementById('inventoryTableBody');
-        const newRow = document.createElement('tr');
-        newRow.innerHTML = `
-            <td><span class="badge bg-secondary font-monospace">${serial}</span></td>
-            <td><strong>${model}</strong></td>
-            <td>${type}</td>
-            <td class="font-monospace">${caliber}</td>
-            <td class="text-center"><span class="badge badge-status ${statusClass}">${status}</span></td>
-        `;
-        tableBody.appendChild(newRow);
-        document.getElementById('firearmForm').reset();
-        bootstrap.Modal.getInstance(document.getElementById('addFirearmModal')).hide();
-    }
-
-    // Preview Ammo Transaction Row Locally
-    function handleAmmoSubmit(event) {
-        event.preventDefault();
-        const type = document.getElementById('ammoTransactionType').value;
-        const caliber = document.getElementById('ammoCaliber').value;
-        const qty = parseInt(document.getElementById('ammoQty').value);
-        const target = document.getElementById('ammoTarget').value;
-        const reference = document.getElementById('ammoRef').value || 'N/A';
-
-        const now = new Date();
-        const timestamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-        let badgeStyle = 'bg-primary text-white';
-        let textClass = 'text-primary';
-        let prefix = '+';
-
-        if (type === 'Distribution') {
-            badgeStyle = 'text-white" style="background-color: #6f42c1;';
-            textClass = '" style="color: #6f42c1;';
-            prefix = '-';
-        } else if (type === 'Expenditure') {
-            badgeStyle = 'bg-danger text-white';
-            textClass = 'text-danger';
-            prefix = '-';
-        }
-
-        const tableBody = document.getElementById('ammoTableBody');
-        const newRow = document.createElement('tr');
-        newRow.innerHTML = `
-            <td class="text-muted font-monospace small">${timestamp}</td>
-            <td><strong>${caliber}</strong></td>
-            <td><span class="badge badge-status ${badgeStyle}">${type}</span></td>
-            <td class="font-monospace fw-bold ${textClass}">${prefix}${qty.toLocaleString()}</td>
-            <td>${target}</td>
-            <td class="text-end font-monospace text-muted">${reference}</td>
-        `;
-        tableBody.insertBefore(newRow, tableBody.firstChild);
-        document.getElementById('ammoForm').reset();
-        bootstrap.Modal.getInstance(document.getElementById('ammoLedgerModal')).hide();
-    }
 </script>
 </body>
 </html>

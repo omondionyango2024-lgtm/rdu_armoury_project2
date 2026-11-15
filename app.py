@@ -9,7 +9,7 @@ from datetime import datetime
 from flask import Flask, request, session, redirect, url_for, flash, render_template
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import SQLAlchemyError
-from models import db, User, FirearmInventory, DeploymentLog
+from models import db, User, FirearmInventory, DeploymentLog, AmmoTransaction
 
 app = Flask(__name__)
 
@@ -195,17 +195,113 @@ def process_checkout():
 
 @app.route('/firearms-inventory')
 def firearms_inventory():
+    """Renders the Arsenal Logistics & Control Center with live PostgreSQL data."""
     if 'user_id' not in session:
         flash('Access Denied: Please authenticate security credentials.', 'danger')
         return redirect(url_for('login_view'))
 
     try:
         firearms_list = db.session.query(FirearmInventory).all()
-    except SQLAlchemyError:
-        firearms_list = []
+        ammo_logs = db.session.query(AmmoTransaction).order_by(AmmoTransaction.timestamp.desc()).all()
 
-    return render_template('firearms_inventory.html', firearms=firearms_list)
+        # Calculate live ammunition totals from PostgreSQL records
+        acquired_total = sum(log.quantity for log in ammo_logs if log.transaction_type == 'Acquisition')
+        distributed_total = sum(log.quantity for log in ammo_logs if log.transaction_type == 'Distribution')
+        expended_total = sum(log.quantity for log in ammo_logs if log.transaction_type == 'Expenditure')
+        net_reserve = acquired_total - (distributed_total + expended_total)
 
+    except SQLAlchemyError as db_err:
+        print(f"[DB ERROR] Failed to fetch inventory: {db_err}")
+        firearms_list, ammo_logs = [], []
+        acquired_total = distributed_total = expended_total = net_reserve = 0
+
+    return render_template(
+        'firearms_inventory.html',
+        firearms=firearms_list,
+        ammo_logs=ammo_logs,
+        acquired=acquired_total,
+        distributed=distributed_total,
+        expended=expended_total,
+        reserve=net_reserve
+    )
+
+
+@app.route('/add_firearm', methods=['POST'])
+def add_firearm():
+    """Saves a newly acquired firearm permanently into PostgreSQL."""
+    if 'user_id' not in session:
+        return redirect(url_for('login_view'))
+
+    if session.get('role') not in ['Armourer', 'System Administrator']:
+        flash('Security Violation: Only certified Armourers can register new firearms.', 'danger')
+        return redirect(url_for('firearms_inventory'))
+
+    serial = request.form.get('serial', '').strip()
+    model = request.form.get('model', '').strip()
+    f_type = request.form.get('type', '').strip()
+    caliber = request.form.get('caliber', '').strip()
+    status = request.form.get('status', 'Available').strip()
+
+    existing = db.session.query(FirearmInventory).filter_by(serial_number=serial).first()
+    if existing:
+        flash(f'Registration Rejected: Serial number {serial} already exists in the armoury.', 'danger')
+        return redirect(url_for('firearms_inventory'))
+
+    try:
+        new_weapon = FirearmInventory(
+            serial_number=serial,
+            make_model=model,
+            weapon_type=f_type,
+            caliber=caliber,
+            operational_status=status
+        )
+        db.session.add(new_weapon)
+        db.session.commit()
+        flash(f'Firearm {serial} ({model}) permanently registered in database.', 'success')
+    except SQLAlchemyError as err:
+        db.session.rollback()
+        print(f"[DB ERROR] Add firearm failed: {err}")
+        flash('Database Error: Could not save firearm record.', 'danger')
+
+    return redirect(url_for('firearms_inventory'))
+
+
+@app.route('/log_ammo', methods=['POST'])
+def log_ammo():
+    """Saves an ammunition acquisition, distribution, or expenditure record into PostgreSQL."""
+    if 'user_id' not in session:
+        return redirect(url_for('login_view'))
+
+    if session.get('role') not in ['Armourer', 'System Administrator']:
+        flash('Security Violation: Only certified Armourers can log ammunition transactions.', 'danger')
+        return redirect(url_for('firearms_inventory'))
+
+    t_type = request.form.get('transaction_type', '').strip()
+    caliber = request.form.get('caliber', '').strip()
+    target = request.form.get('target', '').strip()
+    reference = request.form.get('reference', '').strip() or 'N/A'
+
+    try:
+        qty = int(request.form.get('quantity', 0))
+        if qty <= 0:
+            raise ValueError("Quantity must be positive")
+
+        new_tx = AmmoTransaction(
+            caliber=caliber,
+            transaction_type=t_type,
+            quantity=qty,
+            target_unit=target,
+            reference_voucher=reference
+        )
+        db.session.add(new_tx)
+        db.session.commit()
+        flash(f'Ammunition {t_type} of {qty:,} rounds ({caliber}) committed to ledger.', 'success')
+    except (ValueError, SQLAlchemyError) as err:
+        db.session.rollback()
+        print(f"[DB ERROR] Log ammo failed: {err}")
+        flash('Transaction Error: Please enter a valid positive quantity.', 'danger')
+
+    return redirect(url_for('firearms_inventory'))
 
 @app.route('/logout')
 def logout():
@@ -227,12 +323,12 @@ def seed_armoury_stock():
             return "Armoury Shelves Already Stocked! No injection required.", 200
 
         # Create three standard-issue field assets for tactical validation
-        weapon1 = FirearmInventory(serial_number="RDU-SIG-9081", firearm_type="Pistol", model="Sig Sauer P320",
+        weapon1 = FirearmInventory(serial_number="RDU-SIG-9081", weapon_type="Pistol", make_model="Sig Sauer P320",
                                    caliber="9x19mm", operational_status="Available")
-        weapon2 = FirearmInventory(serial_number="RDU-AR-4402", firearm_type="Assault Rifle", model="M4A1 Carbine",
-                                   caliber="5.56x45mm", operational_status="Available")
-        weapon3 = FirearmInventory(serial_number="RDU-GLK-1793", firearm_type="Pistol", model="Glock 17",
-                                   caliber="9x19mm", operational_status="Available")
+        weapon2 = FirearmInventory(serial_number="RDU-AR-4402", weapon_type="Assault Rifle", make_model="M4A1 Carbine",
+                                   caliber="7.62x51mm", operational_status="Available")
+        weapon3 = FirearmInventory(serial_number="RDU-GLK-1793", weapon_type="Support Weapon", make_model="GPMG 17",
+                                   caliber="7.62x55mm", operational_status="Available")
 
         db.session.add_all([weapon1, weapon2, weapon3])
         db.session.commit()
