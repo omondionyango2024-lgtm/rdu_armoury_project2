@@ -190,7 +190,7 @@ def process_checkout():
 
 @app.route('/process_checkin/<int:log_id>', methods=['POST'])
 def process_checkin(log_id):
-    """Closes an active deployment log and returns the firearm to Available stock."""
+    """Closes an active deployment log, updates cumulative rounds fired, and checks maintenance thresholds."""
     if 'user_id' not in session:
         return redirect(url_for('login_view'))
 
@@ -204,19 +204,43 @@ def process_checkin(log_id):
         return redirect(url_for('dashboard'))
 
     try:
+        rounds_fired = int(request.form.get('rounds_fired', 0))
+        if rounds_fired < 0:
+            raise ValueError("Rounds fired cannot be negative.")
+        needs_maintenance = request.form.get('needs_maintenance') == 'yes'
+
         log_entry.log_status = 'Returned'
         log_entry.checkin_timestamp = datetime.now(timezone.utc)
 
-        if log_entry.firearm:
-            log_entry.firearm.operational_status = 'Available'
+        weapon = log_entry.firearm
+        if weapon:
+            weapon.cumulative_rounds_fired = (weapon.cumulative_rounds_fired or 0) + rounds_fired
+
+            # Automatically log expended rounds in the Ammunition Ledger
+            if rounds_fired > 0:
+                ammo_exp = AmmoTransaction(
+                    caliber=weapon.caliber,
+                    transaction_type='Expenditure',
+                    quantity=rounds_fired,
+                    target_unit=f"{log_entry.officer.full_name} ({weapon.serial_number})",
+                    reference_voucher=f"CHK-IN-#{log_entry.id}"
+                )
+                db.session.add(ammo_exp)
+
+            # Set status to Maintenance if flagged or if cumulative rounds exceed 5,000
+            if needs_maintenance or weapon.cumulative_rounds_fired >= 5000:
+                weapon.operational_status = 'Maintenance'
+                status_msg = f"flagged for MAINTENANCE ({weapon.cumulative_rounds_fired:,} total rounds)"
+            else:
+                weapon.operational_status = 'Available'
+                status_msg = f"returned to Available stock ({weapon.cumulative_rounds_fired:,} total rounds)"
 
         db.session.commit()
-        flash(f'Asset Check-In Complete: Firearm {log_entry.firearm.serial_number} returned to Available stock.',
-              'success')
-    except SQLAlchemyError as err:
+        flash(f'Check-In Complete: Serial {weapon.serial_number} logged {rounds_fired:,} rounds and {status_msg}.', 'success')
+    except (ValueError, SQLAlchemyError) as err:
         db.session.rollback()
         print(f"[DB ERROR] Check-in failed: {err}")
-        flash('Transaction Error: Could not complete firearm check-in.', 'danger')
+        flash('Transaction Error: Please enter a valid non-negative round count.', 'danger')
 
     return redirect(url_for('dashboard'))
 

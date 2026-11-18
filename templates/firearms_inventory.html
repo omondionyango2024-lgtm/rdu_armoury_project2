@@ -133,15 +133,16 @@
                 <div class="table-responsive">
                     <table class="table table-hover align-middle border-light bg-white rounded shadow-sm">
                         <thead class="table-light">
-                            <tr>
-                                <th>Serial Number</th>
-                                <th>Model</th>
-                                <th>Type / Action</th>
-                                <th>Caliber/Gauge</th>
-                                <th class="text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryTableBody">
+                        <tr>
+        <th>Serial Number</th>
+        <th>Model</th>
+        <th>Type / Action</th>
+        <th>Caliber/Gauge</th>
+        <th class="text-center">Cumulative Rounds</th>
+        <th class="text-center">Status</th>
+    </tr>
+</thead>
+<tbody id="inventoryTableBody">
     {% if firearms %}
         {% for weapon in firearms %}
         <tr>
@@ -149,8 +150,11 @@
             <td><strong>{{ weapon.make_model }}</strong></td>
             <td>{{ weapon.weapon_type }}</td>
             <td class="font-monospace">{{ weapon.caliber }}</td>
+            <td class="text-center font-monospace fw-bold {{ 'text-danger' if weapon.cumulative_rounds_fired >= 5000 else 'text-dark' }}">
+                {{ "{:,}".format(weapon.cumulative_rounds_fired or 0) }} rds
+            </td>
             <td class="text-center">
-                <span class="badge badge-status {{ 'bg-success' if weapon.operational_status == 'Available' else 'bg-warning text-dark' }}">
+                <span class="badge badge-status {{ 'bg-success' if weapon.operational_status == 'Available' else ('bg-danger' if weapon.operational_status == 'Maintenance' else 'bg-warning text-dark') }}">
                     {{ weapon.operational_status }}
                 </span>
             </td>
@@ -158,7 +162,7 @@
         {% endfor %}
     {% else %}
         <tr>
-            <td colspan="5" class="text-center py-4 text-muted">
+            <td colspan="6" class="text-center py-4 text-muted">
                 No firearms registered in PostgreSQL yet. Click <strong>+ Add New Firearm</strong> to register one.
             </td>
         </tr>
