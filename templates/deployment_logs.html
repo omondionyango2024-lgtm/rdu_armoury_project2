@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDU-APS Secure Armoury Platform - Deployment Audit Logs</title>
+    <link rel="stylesheet" href="https://jsdelivr.net">
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        body { background-color: #75f175; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .dashboard-header { border-bottom: 4px solid #d81d7b; padding-bottom: 10px; margin-bottom: 25px; color: #081bec; }
+        .panel-container { background: #e7e2e2; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .badge-status { font-size: 0.85rem; padding: 6px 12px; border-radius: 30px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark shadow-sm py-3" style="background-color: #2a6030 !important;">
+    <div class="d-flex align-items-center justify-content-between w-100 px-4">
+        <a class="navbar-brand fw-bold text-uppercase m-3" href="{{ url_for('dashboard') }}" style="font-size: 24px !important; letter-spacing: 2px; color: #e12d3f !important; font-weight: 800 !important;">
+            <i class="fa-solid fa-shield-halved me-3 text-warning"></i>RDU-APS SECURE FIREARM PORTAL
+        </a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="navbar-text text-white m-0" style="font-size: 15px;">
+                <i class="fa-solid fa-user-gear me-1 text-info"></i> Officer: <strong class="text-light">{{ session.get('full_name', '') }}</strong> ({{ session.get('role', 'Armourer') }})
+            </span>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                <i class="fa-solid fa-power-off me-1"></i>Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid p-4">
+    <div class="dashboard-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h4 class="mb-0">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-dark btn-sm rounded-pill me-3 px-3 fw-bold" style="border: 2px solid #d81d7b;">
+                <i class="fa-solid fa-arrow-left me-1 text-warning"></i> Back to Dashboard
+            </a>
+            <i class="fa-solid fa-file-shield me-2"></i>Master Tactical Deployment Audit Ledger
+        </h4>
+        <small class="text-muted">Complete Chain-of-Custody History</small>
+    </div>
+
+    <div class="panel-container">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle bg-white rounded shadow-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Log ID</th>
+                        <th>Issued To (Officer)</th>
+                        <th>Firearm Serial & Model</th>
+                        <th>Mission Purpose</th>
+                        <th>Issued By (Armourer)</th>
+                        <th>Checkout Time</th>
+                        <th>Check-In Time</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if logs %}
+                        {% for log in logs %}
+                        <tr>
+                            <td><strong>#{{ log.id }}</strong></td>
+                            <td>
+                                <strong>{{ log.officer.full_name }}</strong>
+                                <span class="text-muted small d-block">{{ log.officer.rank }} ({{ log.officer.service_number }})</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary font-monospace">{{ log.firearm.serial_number }}</span>
+                                <span class="text-muted small d-block">{{ log.firearm.make_model }}</span>
+                            </td>
+                            <td>{{ log.purpose_operation }}</td>
+                            <td>{{ log.armourer.full_name }}</td>
+                            <td class="font-monospace small">{{ log.checkout_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="font-monospace small">
+                                {{ log.checkin_timestamp.strftime('%Y-%m-%d %H:%M') if log.checkin_timestamp else 'In Field' }}
+                            </td>
+                            <td class="text-center">
+                                {% if log.log_status == 'Returned' %}
+                                    <span class="badge badge-status bg-secondary text-white">Returned</span>
+                                {% elif log.log_status == 'Overdue' %}
+                                    <span class="badge badge-status bg-danger text-white">Overdue</span>
+                                {% else %}
+                                    <span class="badge badge-status bg-success text-white">Active</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                No tactical deployment records exist in the database yet.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://jsdelivr.net"></script>
+</body>
+</html>

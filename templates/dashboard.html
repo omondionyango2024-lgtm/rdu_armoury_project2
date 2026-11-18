@@ -64,16 +64,19 @@
 
         <!-- Workspace Title Header (With Consolidated Inventory Action Redirection Tool) -->
         <div class="dashboard-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h4><i class="fa-solid fa-chart-line me-2"></i>Operational Control Dashboard</h4>
-            <div class="d-flex align-items-center gap-3">
-                <!-- Portal Redirect Button out to firearms_inventory.html -->
-                <a href="{{ url_for('firearms_inventory') }}" class="btn btn-dark fw-bold px-3 shadow-sm rounded-pill" style="border: 2px solid #d81d7b;">
-    <i class="fa-solid fa-warehouse me-2 text-warning"></i>Manage Inventory & Ammo
-</a>
-                <small class="text-muted d-none d-sm-inline">System Status: Active Logic Operational</small>
-            </div>
-        </div>
-
+    <h4><i class="fa-solid fa-chart-line me-2"></i>Operational Control Dashboard</h4>
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <!-- Link to Full Deployment History -->
+        <a href="{{ url_for('deployment_logs') }}" class="btn btn-outline-dark fw-bold px-3 shadow-sm rounded-pill" style="border: 2px solid #093c09;">
+            <i class="fa-solid fa-clock-rotate-left me-2"></i>Full Deployment Logs
+        </a>
+        <!-- Link to Firearms Inventory -->
+        <a href="{{ url_for('firearms_inventory') }}" class="btn btn-dark fw-bold px-3 shadow-sm rounded-pill" style="border: 2px solid #d81d7b;">
+            <i class="fa-solid fa-warehouse me-2 text-warning"></i>Manage FireArms Inventory & Ammo
+        </a>
+        <small class="text-muted d-none d-sm-inline">System Status: Active Logic Operational</small>
+    </div>
+</div>
         <!-- 1. METRICS & QUANTUM BLOCK TRACKERS LAYER -->
         <div class="row g-4 mb-4">
             <!-- Available Stock Tracker -->
@@ -125,42 +128,54 @@
                     <h5 class="mb-4 text-secondary"><i class="fa-solid fa-list-check me-2"></i>Active Operational Field Logs</h5>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle border-light">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Log Ref ID</th>
-                                    <th>Officer Assignment</th>
-                                    <th>Firearm Serial ID</th>
-                                    <th>Operational Purpose</th>
-                                    <th>Expected Return Timeline</th>
-                                    <th>Status Badge</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% if active_logs %}
-                                    {% for log in active_logs %}
-                                    <tr>
-                                        <td><strong>#{{ log.id }}</strong></td>
-                                        <td>{{ log.officer.full_name }} <span class="text-muted small">({{ log.officer.service_number }})</span></td>
-                                        <td><span class="badge bg-secondary font-monospace">{{ log.firearm.serial_number }}</span></td>
-                                        <td>{{ log.purpose_operation }}</td>
-                                        <td>{{ log.expected_return_date }}</td>
-                                        <td>
-                                            <span class="badge badge-status {{ 'bg-danger text-white' if log.log_status == 'Overdue' else 'bg-success text-white' }}">
-                                                {{ log.log_status }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                {% else %}
-                                    <tr>
-                                        <td colspan="6" class="text-center py-5 text-muted">
-                                            <i class="fa-solid fa-folder-open d-block display-6 mb-3 opacity-50"></i>
-                                            No active field or overdue deployment logs registered inside cloud files.
-                                        </td>
-                                    </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
+    <thead class="table-light">
+        <tr>
+            <th>Log Ref ID</th>
+            <th>Officer Assignment</th>
+            <th>Firearm Serial ID</th>
+            <th>Operational Purpose</th>
+            <th>Expected Return Timeline</th>
+            <th>Status Badge</th>
+            <th class="text-end">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if active_logs %}
+            {% for log in active_logs %}
+            <tr>
+                <td><strong>#{{ log.id }}</strong></td>
+                <td>{{ log.officer.full_name }} <span class="text-muted small">({{ log.officer.service_number }})</span></td>
+                <td><span class="badge bg-secondary font-monospace">{{ log.firearm.serial_number }}</span></td>
+                <td>{{ log.purpose_operation }}</td>
+                <td>{{ log.expected_return_date }}</td>
+                <td>
+                    <span class="badge badge-status {{ 'bg-danger text-white' if log.log_status == 'Overdue' else 'bg-success text-white' }}">
+                        {{ log.log_status }}
+                    </span>
+                </td>
+                <td class="text-end">
+                    {% if session.get('role') in ['Armourer', 'System Administrator'] %}
+                        <form action="{{ url_for('process_checkin', log_id=log.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold">
+                                <i class="fa-solid fa-right-to-bracket me-1 text-warning"></i>Check In
+                            </button>
+                        </form>
+                    {% else %}
+                        <span class="text-muted small">Locked</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-folder-open d-block display-6 mb-3 opacity-50"></i>
+                    No active field or overdue deployment logs registered inside cloud files.
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
                     </div>
                 </div>
             </div>

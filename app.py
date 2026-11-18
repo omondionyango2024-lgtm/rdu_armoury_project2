@@ -5,7 +5,7 @@
 # =========================================================================
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Flask, request, session, redirect, url_for, flash, render_template
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import SQLAlchemyError
@@ -187,6 +187,52 @@ def process_checkout():
         flash('Transaction Pipeline Fault: Database error or invalid date format. Rollback applied.', 'danger')
 
     return redirect(url_for('dashboard'))
+
+@app.route('/process_checkin/<int:log_id>', methods=['POST'])
+def process_checkin(log_id):
+    """Closes an active deployment log and returns the firearm to Available stock."""
+    if 'user_id' not in session:
+        return redirect(url_for('login_view'))
+
+    if session.get('role') not in ['Armourer', 'System Administrator']:
+        flash('Security Access Violation: Asset check-in requires certified Armourer privileges.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    log_entry = db.session.query(DeploymentLog).get(log_id)
+    if not log_entry or log_entry.log_status == 'Returned':
+        flash('Logistical Error: Deployment record not found or already closed.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    try:
+        log_entry.log_status = 'Returned'
+        log_entry.checkin_timestamp = datetime.now(timezone.utc)
+
+        if log_entry.firearm:
+            log_entry.firearm.operational_status = 'Available'
+
+        db.session.commit()
+        flash(f'Asset Check-In Complete: Firearm {log_entry.firearm.serial_number} returned to Available stock.',
+              'success')
+    except SQLAlchemyError as err:
+        db.session.rollback()
+        print(f"[DB ERROR] Check-in failed: {err}")
+        flash('Transaction Error: Could not complete firearm check-in.', 'danger')
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/deployment-logs')
+def deployment_logs():
+    """Renders the complete historical audit ledger of all tactical deployments."""
+    if 'user_id' not in session:
+        flash('Access Denied: Please authenticate security credentials.', 'danger')
+        return redirect(url_for('login_view'))
+
+    try:
+        all_logs = db.session.query(DeploymentLog).order_by(DeploymentLog.checkout_timestamp.desc()).all()
+    except SQLAlchemyError:
+        all_logs = []
+
+    return render_template('deployment_logs.html', logs=all_logs)
 
 
 # =========================================================================
