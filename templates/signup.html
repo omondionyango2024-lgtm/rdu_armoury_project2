@@ -5,73 +5,148 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Armoury System - Provision Officer</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 40px; }
-        .form-container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #75f175;
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;      /* Vertically centers the row in the middle of the page */
+            justify-content: center;  /* Horizontally centers the row */
+            box-sizing: border-box;
+        }
+
+        /* Outer Wrapper Placing Images Left and Right Outside the Card */
+        .page-wrapper {
+            display: flex;
+            align-items: center;      /* Aligns both side images with the vertical middle of the card */
+            justify-content: center;
+            gap: 35px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .side-image {
+            flex: 1;
+            max-width: 240px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .side-image img {
+            width: 100%;
+            height: auto;
+            max-height: 260px;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            background: #ffffff;
+            padding: 8px;
+        }
+
+        .form-container {
+            width: 100%;
+            max-width: 500px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; text-align: center; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 6px; font-weight: bold; color: #34495e; }
         input[type="text"], input[type="password"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #2980b9; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
+        button { background-color: #2980b9; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
         button:hover { background-color: #3498db; }
         .flash-messages { background-color: #f8d7da; color: #721c24; padding: 12px; border-radius: 4px; margin-bottom: 20px; list-style: none; }
+        .login-link { text-align: center; margin-top: 15px; font-size: 14px; }
+        .login-link a { color: #2980b9; text-decoration: none; font-weight: bold; }
+
+        /* Stack cleanly on smaller mobile screens */
+        @media (max-width: 900px) {
+            .page-wrapper {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .side-image {
+                max-width: 160px;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="form-container">
-    <h2>Officer Profile Provisioning Gateway</h2>
+<div class="page-wrapper">
+    <!-- LEFT SIDE IMAGE (Outside the Card, Vertically Centered) -->
+    <div class="side-image">
+        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Unit Crest">
+    </div>
 
-    <!-- Flask Flash Messages Handling UI Context Component -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flash-messages">
-          {% for category, message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
+    <!-- CENTER SIGNUP CARD -->
+    <div class="form-container">
+        <h2>Officer Profile Provisioning Gateway</h2>
 
-    <form action="/signup" method="POST">
-        <div class="form-group">
-            <label for="service_number">Service Number / Force ID:</label>
-            <input type="text" id="service_number" name="service_number" placeholder="e.g. RDU-99214" required>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flash-messages">
+              {% for category, message in messages %}
+                <li>{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('process_signup') }}" method="POST">
+            <div class="form-group">
+                <label for="service_number">Service Number / Force ID:</label>
+                <input type="text" id="service_number" name="service_number" placeholder="e.g. RDU-99214" required>
+            </div>
+
+            <div class="form-group">
+                <label for="full_name">Full Name:</label>
+                <input type="text" id="full_name" name="full_name" placeholder="e.g. John Doe" required>
+            </div>
+
+            <div class="form-group">
+                <label for="rank">Rank / Designation:</label>
+                <select id="rank" name="rank" required>
+                    <option value="" disabled selected>Select Officer Rank</option>
+                    <option value="Constable">Constable</option>
+                    <option value="Corporal">Corporal</option>
+                    <option value="Sergeant">Sergeant</option>
+                    <option value="Inspector">Inspector</option>
+                    <option value="Superintendent">Superintendent</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="role_permissions">Access Clearance Level:</label>
+                <select id="role_permissions" name="role_permissions" required>
+                    <option value="Field officer" selected>Field officer (Standard Access)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Portal Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter secure alphanumeric credentials" required>
+            </div>
+
+            <button type="submit">Provision System Profile</button>
+        </form>
+
+        <div class="login-link">
+            Already provisioned? <a href="{{ url_for('login_view') }}">Return to Secure Login</a>
         </div>
+    </div>
 
-        <div class="form-group">
-            <label for="full_name">Full Name:</label>
-            <input type="text" id="full_name" name="full_name" placeholder="e.g. John Doe" required>
-        </div>
-
-        <div class="form-group">
-            <label for="rank">Rank / Designation:</label>
-            <select id="rank" name="rank" required>
-                <option value="" disabled selected>Select Officer Rank</option>
-                <option value="Constable">Constable</option>
-                <option value="Corporal">Corporal</option>
-                <option value="Sergeant">Sergeant</option>
-                <option value="Inspector">Inspector</option>
-                <option value="Superintendent">Superintendent</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="role_permissions">Access Clearance Level:</label>
-            <select id="role_permissions" name="role_permissions" required>
-                <option value="" disabled selected>Select Permissions</option>
-                <option value="Field_Officer">Field Officer (Standard Access)</option>
-                <option value="Armourer">Armourer (Transactional Execution)</option>
-                <option value="Admin">System Administrator (Root Operations)</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="password"> Portal Password :</label>
-            <input type="password" id="password" name="password" placeholder="Enter secure alphanumeric credentials" required>
-        </div>
-
-        <button type="submit">Provision System Profile</button>
-    </form>
+    <!-- RIGHT SIDE IMAGE (Outside the Card, Vertically Centered) -->
+    <div class="side-image">
+        <img src="{{ url_for('static', filename='images/logo2.jpg') }}" alt="Armoury Seal">
+    </div>
 </div>
 
 </body>
