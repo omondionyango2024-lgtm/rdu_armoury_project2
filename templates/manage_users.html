@@ -1,10 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDU-APS - Personnel Clearance & Access Control</title>
+    <link rel="stylesheet" href="https://jsdelivr.net">
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        body { background-color: #75f175; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .dashboard-header { border-bottom: 4px solid #d81d7b; padding-bottom: 10px; margin-bottom: 25px; color: #081bec; }
+        .panel-container { background: #e7e2e2; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    </style>
 </head>
 <body>
-$END$
+
+<nav class="navbar navbar-dark shadow-sm py-3" style="background-color: #2a6030 !important;">
+    <div class="d-flex align-items-center justify-content-between w-100 px-4">
+        <a class="navbar-brand fw-bold text-uppercase m-3" href="{{ url_for('dashboard') }}" style="font-size: 24px !important; letter-spacing: 2px; color: #e12d3f !important; font-weight: 800 !important;">
+            <i class="fa-solid fa-shield-halved me-3 text-warning"></i>RDU-APS SECURE FIREARM PORTAL
+        </a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="navbar-text text-white m-0">
+                <i class="fa-solid fa-user-shield me-1 text-warning"></i> Admin: <strong>{{ session.get('full_name', '') }}</strong>
+            </span>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="dashboard-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-dark btn-sm rounded-pill me-3 px-3 fw-bold" style="border: 2px solid #d81d7b;">
+                <i class="fa-solid fa-arrow-left me-1 text-warning"></i> Dashboard
+            </a>
+            <i class="fa-solid fa-users-gear me-2"></i>Personnel Clearance & Access Control
+        </h4>
+    </div>
+
+    <div class="panel-container">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle bg-white rounded shadow-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Service Number</th>
+                        <th>Full Name & Rank</th>
+                        <th>Assigned Role</th>
+                        <th>Account Status</th>
+                        <th class="text-end">Save Changes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <form method="POST" action="{{ url_for('update_user_access', target_user_id=u.id) }}">
+                            <td class="font-monospace fw-bold">{{ u.service_number }}</td>
+                            <td><strong>{{ u.full_name }}</strong> <span class="text-muted small d-block">{{ u.rank }}</span></td>
+                            <td>
+                                <select name="role_permissions" class="form-select form-select-sm w-auto" {{ 'disabled' if u.id == session.get('user_id') }}>
+                                    <option value="Field officer" {{ 'selected' if u.role_permissions in ['Field officer', 'Field_Officer'] }}>Field officer</option>
+                                    <option value="Armourer" {{ 'selected' if u.role_permissions == 'Armourer' }}>Armourer</option>
+                                    <option value="System Administrator" {{ 'selected' if u.role_permissions in ['System Administrator', 'Admin'] }}>System Administrator</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="account_status" class="form-select form-select-sm w-auto" {{ 'disabled' if u.id == session.get('user_id') }}>
+                                    <option value="Active" {{ 'selected' if u.account_status == 'Active' }}>Active</option>
+                                    <option value="Suspended" {{ 'selected' if u.account_status == 'Suspended' }}>Suspended</option>
+                                </select>
+                            </td>
+                            <td class="text-end">
+                                {% if u.id != session.get('user_id') %}
+                                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">Update</button>
+                                {% else %}
+                                    <span class="badge bg-dark">Current Session</span>
+                                {% endif %}
+                            </td>
+                        </form>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script src="https://jsdelivr.net"></script>
 </body>
 </html>

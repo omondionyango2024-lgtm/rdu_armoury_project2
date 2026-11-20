@@ -53,16 +53,34 @@ def roles_required(*allowed_roles):
 # LIVE PRODUCTION SCHEMATIC INITIALIZER
 # Forces Render to check and generate missing SQL tables on first page request
 # =========================================================================
+
 @app.before_request
 def initialize_database_schema_on_startup():
-    # Removes itself after running once so it never slows down your application
     app.before_request_funcs[None].remove(initialize_database_schema_on_startup)
     try:
         db.create_all()
         print("[PROD INIT] PostgreSQL database schema verified and generated.")
-    except Exception as initialization_failure:
-        print(f"[PROD INIT CRITICAL] Table generation crashed: {initialization_failure}")
 
+        # Automatically provision a Root System Administrator if none exists yet
+        existing_admin = db.session.query(User).filter(
+            User.role_permissions.in_(['System Administrator', 'Admin'])
+        ).first()
+
+        if not existing_admin:
+            root_admin = User(
+                service_number='ADMIN-001',
+                full_name='Chief System Administrator',
+                rank='Superintendent',
+                role_permissions='System Administrator',
+                password_hash=generate_password_hash('Admin@RDU2026'),
+                account_status='Active'
+            )
+            db.session.add(root_admin)
+            db.session.commit()
+            print("[PROD INIT] Root System Administrator (ADMIN-001) provisioned.")
+    except Exception as initialization_failure:
+        db.session.rollback()
+        print(f"[PROD INIT CRITICAL] Initialization error: {initialization_failure}")
 
 # =========================================================================
 # ROUTING LOGIC LAYER A: USER AUTHENTICATION & PORTAL PROTECTION GATEWAYS
