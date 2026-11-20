@@ -132,43 +132,55 @@
             <div class="tab-pane fade show active" id="firearms-pane" role="tabpanel" tabindex="0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle border-light bg-white rounded shadow-sm">
-                        <thead class="table-light">
-                        <tr>
-        <th>Serial Number</th>
-        <th>Model</th>
-        <th>Type / Action</th>
-        <th>Caliber/Gauge</th>
-        <th class="text-center">Cumulative Rounds</th>
-        <th class="text-center">Status</th>
-    </tr>
-</thead>
-<tbody id="inventoryTableBody">
-    {% if firearms %}
-        {% for weapon in firearms %}
+    <thead class="table-light">
         <tr>
-            <td><span class="badge bg-secondary font-monospace">{{ weapon.serial_number }}</span></td>
-            <td><strong>{{ weapon.make_model }}</strong></td>
-            <td>{{ weapon.weapon_type }}</td>
-            <td class="font-monospace">{{ weapon.caliber }}</td>
-            <td class="text-center font-monospace fw-bold {{ 'text-danger' if weapon.cumulative_rounds_fired >= 5000 else 'text-dark' }}">
-                {{ "{:,}".format(weapon.cumulative_rounds_fired or 0) }} rds
-            </td>
-            <td class="text-center">
-                <span class="badge badge-status {{ 'bg-success' if weapon.operational_status == 'Available' else ('bg-danger' if weapon.operational_status == 'Maintenance' else 'bg-warning text-dark') }}">
-                    {{ weapon.operational_status }}
-                </span>
-            </td>
+            <th>Serial Number</th>
+            <th>Model</th>
+            <th>Type / Action</th>
+            <th>Caliber/Gauge</th>
+            <th class="text-center">Cumulative Rounds</th>
+            <th class="text-center">Status</th>
+            <th class="text-end">Actions</th>
         </tr>
-        {% endfor %}
-    {% else %}
-        <tr>
-            <td colspan="6" class="text-center py-4 text-muted">
-                No firearms registered in PostgreSQL yet. Click <strong>+ Add New Firearm</strong> to register one.
-            </td>
-        </tr>
-    {% endif %}
-</tbody>
-                    </table>
+    </thead>
+    <tbody id="inventoryTableBody">
+        {% if firearms %}
+            {% for weapon in firearms %}
+            <tr>
+                <td><span class="badge bg-secondary font-monospace">{{ weapon.serial_number }}</span></td>
+                <td><strong>{{ weapon.make_model }}</strong></td>
+                <td>{{ weapon.weapon_type }}</td>
+                <td class="font-monospace">{{ weapon.caliber }}</td>
+                <td class="text-center font-monospace fw-bold {{ 'text-danger' if (weapon.cumulative_rounds_fired or 0) >= 5000 else 'text-dark' }}">
+                    {{ "{:,}".format(weapon.cumulative_rounds_fired or 0) }} rds
+                </td>
+                <td class="text-center">
+                    <span class="badge badge-status {{ 'bg-success' if weapon.operational_status == 'Available' else ('bg-danger' if weapon.operational_status == 'Maintenance' else 'bg-warning text-dark') }}">
+                        {{ weapon.operational_status }}
+                    </span>
+                </td>
+                <td class="text-end">
+                    {% if weapon.operational_status == 'Maintenance' and session.get('role') in ['Armourer', 'System Administrator'] %}
+                        <form action="{{ url_for('mark_serviced', firearm_id=weapon.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold shadow-sm">
+                                <i class="fa-solid fa-wrench me-1"></i>Mark Serviced
+                            </button>
+                        </form>
+                    {% else %}
+                        <span class="text-muted small">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                    No firearms registered in PostgreSQL yet. Click <strong>+ Add New Firearm</strong> to register one.
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
                 </div>
             </div>
 

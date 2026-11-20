@@ -10,6 +10,7 @@ from flask import Flask, request, session, redirect, url_for, flash, render_temp
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import SQLAlchemyError
 from models import db, User, FirearmInventory, DeploymentLog, AmmoTransaction
+from functools import wraps
 
 app = Flask(__name__)
 
@@ -31,6 +32,20 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize database extension instance with active application context
 db.init_app(app)
 
+def roles_required(*allowed_roles):
+    """Restricts route access to specified clearance roles."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                flash('Access Denied: Please authenticate security credentials.', 'danger')
+                return redirect(url_for('login_view'))
+            if session.get('role') not in allowed_roles:
+                flash('Security Clearance Violation: You do not have permission to access this resource.', 'danger')
+                return redirect(url_for('dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 # =========================================================================
 # LIVE PRODUCTION SCHEMATIC INITIALIZER
@@ -335,6 +350,26 @@ def add_firearm():
 
     return redirect(url_for('firearms_inventory'))
 
+@app.route('/mark_serviced/<int:firearm_id>', methods=['POST'])
+@roles_required('Armourer', 'System Administrator')
+def mark_serviced(firearm_id):
+    """Returns a firearm from Maintenance back to Available stock after armourer servicing."""
+    weapon = db.session.query(FirearmInventory).get(firearm_id)
+    if not weapon or weapon.operational_status != 'Maintenance':
+        flash('Logistical Error: Firearm not found or not currently in Maintenance.', 'danger')
+        return redirect(url_for('firearms_inventory'))
+
+    try:
+        weapon.operational_status = 'Available'
+        weapon.cumulative_rounds_fired = 0  # Resets service interval counter for the next 5,000-round cycle
+        db.session.commit()
+        flash(f'Maintenance Complete: Serial {weapon.serial_number} ({weapon.make_model}) returned to Available stock.', 'success')
+    except SQLAlchemyError as err:
+        db.session.rollback()
+        print(f"[DB ERROR] Mark serviced failed: {err}")
+        flash('Database Error: Could not update firearm status.', 'danger')
+
+    return redirect(url_for('firearms_inventory'))
 
 @app.route('/log_ammo', methods=['POST'])
 def log_ammo():
