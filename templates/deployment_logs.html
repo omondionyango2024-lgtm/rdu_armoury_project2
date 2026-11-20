@@ -39,7 +39,9 @@
             </a>
             <i class="fa-solid fa-file-shield me-2"></i>Master Tactical Deployment Audit Ledger
         </h4>
-        <small class="text-muted">Complete Chain-of-Custody History</small>
+       <a href="{{ url_for('export_deployments_csv') }}" class="btn btn-success fw-bold px-3 shadow-sm rounded-pill">
+    <i class="fa-solid fa-file-excel me-2"></i>Export Audit Report (CSV)
+</a>
     </div>
 
     <div class="panel-container">

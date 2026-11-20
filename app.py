@@ -5,8 +5,10 @@
 # =========================================================================
 
 import os
+import csv
+import io
 from datetime import datetime, timezone
-from flask import Flask, request, session, redirect, url_for, flash, render_template
+from flask import Flask, request, session, redirect, url_for, flash, render_template, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import SQLAlchemyError
 from models import db, User, FirearmInventory, DeploymentLog, AmmoTransaction
@@ -146,20 +148,62 @@ def process_signup():
 
 @app.route('/dashboard')
 def dashboard():
-    """Renders primary analytics trackers, metrics widgets, and operational data grids."""
     if 'user_id' not in session:
         flash('Access Denied: Please authenticate security credentials.', 'danger')
         return redirect(url_for('login_view'))
 
+    user_role = session.get('role')
+    current_user = db.session.query(User).get(session['user_id'])
+    today = datetime.now(timezone.utc).date()
+
     try:
+        # 1. Automated Overdue Scanner: Flag any active deployment past its return date
+        expired_logs = db.session.query(DeploymentLog).filter(
+            DeploymentLog.log_status == 'Active',
+            DeploymentLog.expected_return_date < today
+        ).all()
+
+        if expired_logs:
+            for item in expired_logs:
+                item.log_status = 'Overdue'
+            db.session.commit()
+
         available_count = db.session.query(FirearmInventory).filter_by(operational_status='Available').count()
         deployed_count = db.session.query(FirearmInventory).filter_by(operational_status='Deployed').count()
-        logs = db.session.query(DeploymentLog).filter(DeploymentLog.log_status.in_(['Active', 'Overdue'])).all()
+
+        if user_role in ['Armourer', 'System Administrator']:
+            logs = db.session.query(DeploymentLog).filter(DeploymentLog.log_status.in_(['Active', 'Overdue'])).all()
+            my_ammo = []
+        else:
+            logs = db.session.query(DeploymentLog).filter(
+                DeploymentLog.officer_id == session['user_id'],
+                DeploymentLog.log_status.in_(['Active', 'Overdue'])
+            ).all()
+
+            my_ammo = db.session.query(AmmoTransaction).filter(
+                AmmoTransaction.transaction_type == 'Distribution',
+                db.or_(
+                    AmmoTransaction.target_unit.ilike(f"%{current_user.full_name}%"),
+                    AmmoTransaction.target_unit.ilike(f"%{current_user.service_number}%")
+                )
+            ).order_by(AmmoTransaction.timestamp.desc()).all()
+
+        overdue_count = sum(1 for log in logs if log.log_status == 'Overdue')
+
     except SQLAlchemyError:
-        available_count, deployed_count, logs = 3, 1, []
+        db.session.rollback()
+        available_count = deployed_count = overdue_count = 0
+        logs, my_ammo = [], []
 
-    return render_template('dashboard.html', available=available_count, deployed=deployed_count, active_logs=logs)
-
+    return render_template(
+        'dashboard.html',
+        user=current_user,
+        available=available_count,
+        deployed=deployed_count,
+        active_logs=logs,
+        my_ammo=my_ammo,
+        overdue_count=overdue_count
+    )
 
 @app.route('/process_checkout', methods=['POST'])
 def process_checkout():
@@ -407,6 +451,73 @@ def log_ammo():
         flash('Transaction Error: Please enter a valid positive quantity.', 'danger')
 
     return redirect(url_for('firearms_inventory'))
+
+@app.route('/export/deployments')
+@roles_required('Armourer', 'System Administrator')
+def export_deployments_csv():
+    """Exports the complete chain-of-custody deployment history as an Excel-compatible CSV."""
+    logs = db.session.query(DeploymentLog).order_by(DeploymentLog.checkout_timestamp.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        'Log ID', 'Officer Service No', 'Officer Name', 'Rank',
+        'Firearm Serial', 'Make & Model', 'Mission / Location',
+        'Issued By (Armourer)', 'Checkout Timestamp (UTC)',
+        'Expected Return Date', 'Check-In Timestamp (UTC)', 'Status'
+    ])
+
+    for log in logs:
+        writer.writerow([
+            log.id,
+            log.officer.service_number if log.officer else 'N/A',
+            log.officer.full_name if log.officer else 'N/A',
+            log.officer.rank if log.officer else 'N/A',
+            log.firearm.serial_number if log.firearm else 'N/A',
+            log.firearm.make_model if log.firearm else 'N/A',
+            log.purpose_operation,
+            log.armourer.full_name if log.armourer else 'N/A',
+            log.checkout_timestamp.strftime('%Y-%m-%d %H:%M') if log.checkout_timestamp else '',
+            log.expected_return_date.strftime('%Y-%m-%d') if log.expected_return_date else '',
+            log.checkin_timestamp.strftime('%Y-%m-%d %H:%M') if log.checkin_timestamp else 'In Field',
+            log.log_status
+        ])
+
+    filename = f"RDU_Deployment_Audit_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+@app.route('/export/ammo')
+@roles_required('Armourer', 'System Administrator')
+def export_ammo_csv():
+    """Exports the complete ammunition acquisition, distribution, and expenditure ledger as CSV."""
+    records = db.session.query(AmmoTransaction).order_by(AmmoTransaction.timestamp.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Transaction ID', 'Timestamp (UTC)', 'Caliber', 'Transaction Type', 'Quantity (Rounds)', 'Recipient / Batch / Unit', 'Reference Voucher'])
+
+    for r in records:
+        signed_qty = r.quantity if r.transaction_type == 'Acquisition' else -r.quantity
+        writer.writerow([
+            r.id,
+            r.timestamp.strftime('%Y-%m-%d %H:%M') if r.timestamp else '',
+            r.caliber,
+            r.transaction_type,
+            signed_qty,
+            r.target_unit,
+            r.reference_voucher or 'N/A'
+        ])
+
+    filename = f"RDU_Ammo_Ledger_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
 
 @app.route('/logout')
 def logout():

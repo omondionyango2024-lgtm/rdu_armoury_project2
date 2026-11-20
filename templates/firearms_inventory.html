@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RDU-APS Secure Armoury Platform - Firearms & Ammo Inventory</title>
-    <!-- Bootstrap 5 and FontAwesome CSS Integration (Matches dashboard.html) -->
     <link rel="stylesheet" href="https://jsdelivr.net">
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
@@ -21,7 +20,6 @@
 </head>
 <body>
 
-<!-- Top Secure Navigation Bar (Matches dashboard.html) -->
 <nav class="navbar navbar-dark shadow-sm py-3" style="background-color: #2a6030 !important;">
     <div class="d-flex align-items-center justify-content-between w-100 px-4">
         <a class="navbar-brand fw-bold text-uppercase m-3" href="{{ url_for('dashboard') }}" style="font-size: 24px !important; letter-spacing: 2px; color: #e12d3f !important; font-weight: 800 !important;">
@@ -29,7 +27,7 @@
         </a>
         <div class="d-flex align-items-center gap-3">
             <span class="navbar-text text-white m-0" style="font-size: 15px; font-family: sans-serif;">
-                <i class="fa-solid fa-user-gear me-1 text-info"></i> Officer: <strong class="text-light">{{ session.get('full_name', '') }}</strong> ({{ session.get('role', 'Armourer') }})
+                <i class="fa-solid fa-user-gear me-1 text-info"></i> Officer: <strong class="text-light">{{ session.get('full_name', '') }}</strong> ({{ session.get('role') }})
             </span>
             <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold shadow-sm" style="font-size: 15px;">
                 <i class="fa-solid fa-power-off me-1"></i>Logout
@@ -38,10 +36,8 @@
     </div>
 </nav>
 
-<!-- Main Workspace Fluid Grid -->
 <div class="container-fluid p-4">
 
-    <!-- Alerts Broadcast Layer -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -53,7 +49,6 @@
         {% endif %}
     {% endwith %}
 
-    <!-- Workspace Title Header with Back Button to Dashboard -->
     <div class="dashboard-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h4 class="mb-0">
             <a href="{{ url_for('dashboard') }}" class="btn btn-dark btn-sm rounded-pill me-3 px-3 fw-bold" style="border: 2px solid #d81d7b;">
@@ -64,7 +59,7 @@
         <small class="text-muted d-none d-sm-inline">System Status: Active Logic Operational</small>
     </div>
 
-     <!-- Operational Ammunition Metrics Summary Cards (Connected to Live PostgreSQL Totals) -->
+    <!-- Operational Ammunition Metrics Summary Cards -->
     <div class="row g-4 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card stat-card bg-primary text-white h-100">
@@ -100,7 +95,7 @@
         </div>
     </div>
 
-     <!-- Main Tabbed Panel Container -->
+    <!-- Main Tabbed Panel Container -->
     <div class="panel-container">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
             <ul class="nav nav-tabs border-bottom-0" id="inventoryTabs" role="tablist">
@@ -116,75 +111,100 @@
                 </li>
             </ul>
 
-            <div>
-                <button type="button" class="btn btn-success fw-semibold shadow-sm" id="btnAddFirearm" data-bs-toggle="modal" data-bs-target="#addFirearmModal">
-                    <i class="fa-solid fa-plus me-1"></i> Add New Firearm
-                </button>
-                <button type="button" class="btn text-white d-none fw-semibold shadow-sm" style="background-color: #6f42c1;" id="btnLogAmmo" data-bs-toggle="modal" data-bs-target="#ammoLedgerModal">
-                    <i class="fa-solid fa-square-plus me-1"></i> Log Ammo Transaction
-                </button>
-            </div>
+            {% if session.get('role') in ['Armourer', 'System Administrator'] %}
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-success fw-semibold shadow-sm" id="btnAddFirearm" data-bs-toggle="modal" data-bs-target="#addFirearmModal">
+                        <i class="fa-solid fa-plus me-1"></i> Add New Firearm
+                    </button>
+                    <a href="{{ url_for('export_ammo_csv') }}" class="btn btn-outline-dark d-none fw-semibold shadow-sm" id="btnExportAmmo">
+                        <i class="fa-solid fa-file-csv me-1 text-success"></i> Export CSV
+                    </a>
+                    <button type="button" class="btn text-white d-none fw-semibold shadow-sm" style="background-color: #6f42c1;" id="btnLogAmmo" data-bs-toggle="modal" data-bs-target="#ammoLedgerModal">
+                        <i class="fa-solid fa-square-plus me-1"></i> Log Ammo Transaction
+                    </button>
+                </div>
+            {% endif %}
         </div>
 
         <div class="tab-content" id="inventoryTabsContent">
 
-            <!-- PANEL 1: FIREARMS REGISTRY (Connected to PostgreSQL via Flask) -->
+         <!-- PANEL 1: FIREARMS REGISTRY -->
             <div class="tab-pane fade show active" id="firearms-pane" role="tabpanel" tabindex="0">
+                <!-- LIVE SEARCH & STATUS FILTER BAR -->
+<div class="row g-2 mb-3">
+    <div class="col-12 col-md-8">
+        <label for="firearmSearch" class="visually-hidden">Search Firearms</label>
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+            <input type="text" id="firearmSearch" class="form-control border-start-0" placeholder="Search by serial number, make/model, type, or caliber...">
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <label for="statusFilter" class="visually-hidden">Filter by Status</label>
+        <select id="statusFilter" class="form-select shadow-sm fw-semibold">
+            <option value="ALL">Status: All Firearms</option>
+            <option value="Available">Available Only</option>
+            <option value="Deployed">Deployed Only</option>
+            <option value="Maintenance">Maintenance Only</option>
+        </select>
+    </div>
+</div>
+
                 <div class="table-responsive">
                     <table class="table table-hover align-middle border-light bg-white rounded shadow-sm">
-    <thead class="table-light">
-        <tr>
-            <th>Serial Number</th>
-            <th>Model</th>
-            <th>Type / Action</th>
-            <th>Caliber/Gauge</th>
-            <th class="text-center">Cumulative Rounds</th>
-            <th class="text-center">Status</th>
-            <th class="text-end">Actions</th>
-        </tr>
-    </thead>
-    <tbody id="inventoryTableBody">
-        {% if firearms %}
-            {% for weapon in firearms %}
-            <tr>
-                <td><span class="badge bg-secondary font-monospace">{{ weapon.serial_number }}</span></td>
-                <td><strong>{{ weapon.make_model }}</strong></td>
-                <td>{{ weapon.weapon_type }}</td>
-                <td class="font-monospace">{{ weapon.caliber }}</td>
-                <td class="text-center font-monospace fw-bold {{ 'text-danger' if (weapon.cumulative_rounds_fired or 0) >= 5000 else 'text-dark' }}">
-                    {{ "{:,}".format(weapon.cumulative_rounds_fired or 0) }} rds
-                </td>
-                <td class="text-center">
-                    <span class="badge badge-status {{ 'bg-success' if weapon.operational_status == 'Available' else ('bg-danger' if weapon.operational_status == 'Maintenance' else 'bg-warning text-dark') }}">
-                        {{ weapon.operational_status }}
-                    </span>
-                </td>
-                <td class="text-end">
-                    {% if weapon.operational_status == 'Maintenance' and session.get('role') in ['Armourer', 'System Administrator'] %}
-                        <form action="{{ url_for('mark_serviced', firearm_id=weapon.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold shadow-sm">
-                                <i class="fa-solid fa-wrench me-1"></i>Mark Serviced
-                            </button>
-                        </form>
-                    {% else %}
-                        <span class="text-muted small">—</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        {% else %}
-            <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
-                    No firearms registered in PostgreSQL yet. Click <strong>+ Add New Firearm</strong> to register one.
-                </td>
-            </tr>
-        {% endif %}
-    </tbody>
-</table>
+                        <thead class="table-light">
+                            <tr>
+                                <th>Serial Number</th>
+                                <th>Model</th>
+                                <th>Type / Action</th>
+                                <th>Caliber/Gauge</th>
+                                <th class="text-center">Cumulative Rounds</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody">
+                            {% if firearms %}
+                                {% for weapon in firearms %}
+                                <tr>
+                                    <td><span class="badge bg-secondary font-monospace">{{ weapon.serial_number }}</span></td>
+                                    <td><strong>{{ weapon.make_model }}</strong></td>
+                                    <td>{{ weapon.weapon_type }}</td>
+                                    <td class="font-monospace">{{ weapon.caliber }}</td>
+                                    <td class="text-center font-monospace fw-bold {{ 'text-danger' if (weapon.cumulative_rounds_fired or 0) >= 5000 else 'text-dark' }}">
+                                        {{ "{:,}".format(weapon.cumulative_rounds_fired or 0) }} rds
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-status {{ 'bg-success' if weapon.operational_status == 'Available' else ('bg-danger' if weapon.operational_status == 'Maintenance' else 'bg-warning text-dark') }}">
+                                            {{ weapon.operational_status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        {% if weapon.operational_status == 'Maintenance' and session.get('role') in ['Armourer', 'System Administrator'] %}
+                                            <form action="{{ url_for('mark_serviced', firearm_id=weapon.id) }}" method="POST" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold shadow-sm">
+                                                    <i class="fa-solid fa-wrench me-1"></i>Mark Serviced
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <span class="text-muted small">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        No firearms registered in PostgreSQL yet. Click <strong>+ Add New Firearm</strong> to register one.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- PANEL 2: AMMUNITION LOGISTICS LEDGER (Connected to PostgreSQL via Flask) -->
+            <!-- PANEL 2: AMMUNITION LOGISTICS LEDGER -->
             <div class="tab-pane fade" id="ammo-pane" role="tabpanel" tabindex="0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle border-light bg-white rounded shadow-sm">
@@ -261,6 +281,7 @@
                                 <option value="Pistol">Pistol</option>
                                 <option value="Assault Rifle">Assault Rifle</option>
                                 <option value="Shotgun">Shotgun</option>
+                                <option value="Support Weapon">Support Weapon</option>
                             </select>
                         </div>
                         <div class="col-6">
@@ -301,7 +322,7 @@
                             <label for="ammoTransactionType" class="form-label small text-uppercase fw-semibold text-light">Transaction Activity *</label>
                             <select id="ammoTransactionType" name="transaction_type" required class="form-select bg-secondary text-white border-0">
                                 <option value="Acquisition">Acquisition (Inbound Procurement)</option>
-                                <option value="Distribution">Distribution (Outbound to Unit)</option>
+                                <option value="Distribution">Distribution (Outbound to Unit/Officer)</option>
                                 <option value="Expenditure">Expenditure (Consumed/Fired)</option>
                             </select>
                         </div>
@@ -315,7 +336,7 @@
                         </div>
                         <div class="col-6">
                             <label for="ammoTarget" class="form-label small text-uppercase fw-semibold text-light">Recipient / Source *</label>
-                            <input type="text" id="ammoTarget" name="target" required placeholder="e.g., Squad A" class="form-control bg-secondary text-white border-0">
+                            <input type="text" id="ammoTarget" name="target" required placeholder="e.g., RDU-7742 or Squad A" class="form-control bg-secondary text-white border-0">
                         </div>
                         <div class="col-6">
                             <label for="ammoRef" class="form-label small text-uppercase fw-semibold text-light">Reference Voucher</label>
@@ -334,19 +355,48 @@
 
 <script src="https://jsdelivr.net"></script>
 <script>
-    // Switch Action Buttons When Switching Tabs
+    // 1. Switch Action Buttons When Switching Tabs
     const tabElements = document.querySelectorAll('button[data-bs-toggle="tab"]');
     tabElements.forEach(tab => {
         tab.addEventListener('shown.bs.tab', function (event) {
             if (event.target.id === 'firearms-tab') {
-                document.getElementById('btnAddFirearm').classList.remove('d-none');
-                document.getElementById('btnLogAmmo').classList.add('d-none');
+                document.getElementById('btnAddFirearm')?.classList.remove('d-none');
+                document.getElementById('btnLogAmmo')?.classList.add('d-none');
+                document.getElementById('btnExportAmmo')?.classList.add('d-none');
             } else {
-                document.getElementById('btnAddFirearm').classList.add('d-none');
-                document.getElementById('btnLogAmmo').classList.remove('d-none');
+                document.getElementById('btnAddFirearm')?.classList.add('d-none');
+                document.getElementById('btnLogAmmo')?.classList.remove('d-none');
+                document.getElementById('btnExportAmmo')?.classList.remove('d-none');
             }
         });
     });
+
+    // 2. Live Search & Status Filter for Firearms Registry
+    const searchInput = document.getElementById('firearmSearch');
+    const statusSelect = document.getElementById('statusFilter');
+    const tableBody = document.getElementById('inventoryTableBody');
+
+    function filterFirearmsTable() {
+        const query = searchInput.value.toLowerCase().trim();
+        const selectedStatus = statusSelect.value;
+        const rows = tableBody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+            if (row.cells.length < 6) return;
+            const rowText = row.textContent.toLowerCase();
+            const statusText = row.cells[5].textContent.trim();
+
+            const matchesSearch = rowText.includes(query);
+            const matchesStatus = (selectedStatus === 'ALL') || (statusText === selectedStatus);
+
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    if (searchInput && statusSelect) {
+        searchInput.addEventListener('input', filterFirearmsTable);
+        statusSelect.addEventListener('change', filterFirearmsTable);
+    }
 </script>
 </body>
 </html>
