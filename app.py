@@ -167,12 +167,19 @@ def dashboard():
         flash('Access Denied: Please authenticate security credentials.', 'danger')
         return redirect(url_for('login_view'))
 
-    user_role = session.get('role')
-    current_user = db.session.query(User).get(session['user_id'])
+    # Stale-session guard: clears old browser cookies if user_id is missing in PostgreSQL
+    current_user = db.session.get(User, session['user_id'])
+    if not current_user:
+        session.clear()
+        flash('Session Expired: Please log in again with your active credentials.', 'warning')
+        return redirect(url_for('login_view'))
+
+    user_role = current_user.role_permissions
+    session['role'] = user_role  # Sync live role from database
     today = datetime.now(timezone.utc).date()
 
     try:
-        # 1. Automated Overdue Scanner: Flag any active deployment past its return date
+        # 1. Automated Overdue Scanner
         expired_logs = db.session.query(DeploymentLog).filter(
             DeploymentLog.log_status == 'Active',
             DeploymentLog.expected_return_date < today
@@ -186,12 +193,12 @@ def dashboard():
         available_count = db.session.query(FirearmInventory).filter_by(operational_status='Available').count()
         deployed_count = db.session.query(FirearmInventory).filter_by(operational_status='Deployed').count()
 
-        if user_role in ['Armourer', 'System Administrator']:
+        if user_role in ['Armourer', 'System Administrator', 'Admin']:
             logs = db.session.query(DeploymentLog).filter(DeploymentLog.log_status.in_(['Active', 'Overdue'])).all()
             my_ammo = []
         else:
             logs = db.session.query(DeploymentLog).filter(
-                DeploymentLog.officer_id == session['user_id'],
+                DeploymentLog.officer_id == current_user.id,
                 DeploymentLog.log_status.in_(['Active', 'Overdue'])
             ).all()
 
