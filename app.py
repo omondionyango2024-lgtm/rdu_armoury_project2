@@ -8,11 +8,12 @@ import os
 import csv
 import io
 from datetime import datetime, timezone
+from functools import wraps
 from flask import Flask, request, session, redirect, url_for, flash, render_template, Response
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError
 from models import db, User, FirearmInventory, DeploymentLog, AmmoTransaction
-from functools import wraps
 
 app = Flask(__name__)
 
@@ -34,26 +35,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize database extension instance with active application context
 db.init_app(app)
 
-def roles_required(*allowed_roles):
-    """Restricts route access to specified clearance roles."""
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if 'user_id' not in session:
-                flash('Access Denied: Please authenticate security credentials.', 'danger')
-                return redirect(url_for('login_view'))
-            if session.get('role') not in allowed_roles:
-                flash('Security Clearance Violation: You do not have permission to access this resource.', 'danger')
-                return redirect(url_for('dashboard'))
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
-
 # =========================================================================
-# LIVE PRODUCTION SCHEMATIC INITIALIZER
-# Forces Render to check and generate missing SQL tables on first page request
+# LIVE PRODUCTION SCHEMATIC & ROOT ADMIN INITIALIZER
 # =========================================================================
-
 @app.before_request
 def initialize_database_schema_on_startup():
     app.before_request_funcs[None].remove(initialize_database_schema_on_startup)
@@ -61,7 +45,6 @@ def initialize_database_schema_on_startup():
         db.create_all()
         print("[PROD INIT] PostgreSQL database schema verified and generated.")
 
-        # Automatically provision a Root System Administrator if none exists yet
         existing_admin = db.session.query(User).filter(
             User.role_permissions.in_(['System Administrator', 'Admin'])
         ).first()
@@ -80,12 +63,26 @@ def initialize_database_schema_on_startup():
             print("[PROD INIT] Root System Administrator (ADMIN-001) provisioned.")
     except Exception as initialization_failure:
         db.session.rollback()
-        print(f"[PROD INIT CRITICAL] Initialization error: {initialization_failure}")
+        print(f"[PROD INIT CRITICAL] Table generation crashed: {initialization_failure}")
+
+def roles_required(*allowed_roles):
+    """Restricts route access to specified clearance roles."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                flash('Access Denied: Please authenticate security credentials.', 'danger')
+                return redirect(url_for('login_view'))
+            if session.get('role') not in allowed_roles:
+                flash('Security Clearance Violation: You do not have permission to access this resource.', 'danger')
+                return redirect(url_for('dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 # =========================================================================
 # ROUTING LOGIC LAYER A: USER AUTHENTICATION & PORTAL PROTECTION GATEWAYS
 # =========================================================================
-
 @app.route('/')
 def login_view():
     """Renders the secure gateway login form view component."""
@@ -572,7 +569,32 @@ def seed_armoury_stock():
         db.session.rollback()
         return f"Logistical Injection Pipeline Failed: {seed_err}", 500
 # =========================================================================
-# STANDARD EXECUTION ROUTINE LAYER: LOCAL TESTING ENVIRONMENT ONLY
+# SYSTEM ADMINISTRATOR USER CLEARANCE MANAGEMENT
 # =========================================================================
+
+@app.route('/admin/users')
+@roles_required('System Administrator', 'Admin')
+def manage_users():
+    """Admin-only control panel for managing officer roles and account status."""
+    all_users = db.session.query(User).order_by(User.id.asc()).all()
+    return render_template('manage_users.html', users=all_users)
+
+
+@app.route('/admin/users/update/<int:target_user_id>', methods=['POST'])
+@roles_required('System Administrator', 'Admin')
+def update_user_access(target_user_id):
+    """Updates a user's clearance role or active/suspended status."""
+    if target_user_id == session.get('user_id'):
+        flash('Safety Lock: You cannot modify your own active System Administrator account.', 'warning')
+        return redirect(url_for('manage_users'))
+
+    target_user = db.session.query(User).get(target_user_id)
+    if target_user:
+        target_user.role_permissions = request.form.get('role_permissions')
+        target_user.account_status = request.form.get('account_status')
+        db.session.commit()
+        flash(f'Updated clearance for {target_user.full_name} ({target_user.service_number}).', 'success')
+    return redirect(url_for('manage_users'))
+
 if __name__ == '__main__':
     app.run(debug=True)
