@@ -115,18 +115,31 @@
                 <label for="rank">Rank / Designation:</label>
                 <select id="rank" name="rank" required>
                     <option value="" disabled selected>Select Officer Rank</option>
-                    <option value="Constable">Constable</option>
-                    <option value="Corporal">Corporal</option>
-                    <option value="Sergeant">Sergeant</option>
-                    <option value="Inspector">Inspector</option>
-                    <option value="Superintendent">Superintendent</option>
+                        <option value="SAIG">Senior Assistant Inspector General (SAIG)</option>
+                        <option value="AIG">Assistant Inspector General (AIG)</option>
+                        <option value="CP">Commissioner of Police (CP)</option>
+                        <option value="SSP">Senior Superintendent of Police (SSP)</option>
+                        <option value="SP">Superintendent of Police (SP)</option>
+                        <option value="ASP">Assistant Superintendent of Police (ASP)</option>
+                        <option value="CI">Chief Inspector (CI)</option>
+                        <option value="IP">Inspector of Police (IP)</option>
+                        <option value="Senior Sergeant">Senior Sergeant</option>
+                        <option value="Sergeant">Sergeant</option>
+                        <option value="Corporal">Corporal</option>
+                        <option value="Constable">Constable</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="role_permissions">Access Clearance Level:</label>
                 <select id="role_permissions" name="role_permissions" required>
-                    <option value="Field officer" selected>RDU officer (Standard Access)</option>
+                    <option value="Field officer" selected>Field officer </option>
+                    <option value="HeadQuarter Party" selected>HeadQuarter Party </option>
+                    <option value="Platoon Commander" selected>Platoon Commander </option>
+                    <option value="Company Commander" selected>Company Commander </option>
+                    <option value="Staffing Officer Administration" selected>Staffing Officer Administration </option>
+                    <option value="Deputy Commandant" selected>Deputy Commandant </option>
+                    <option value="The Commandant RDU" selected>The Commandant RDU </option>
                 </select>
             </div>
 
